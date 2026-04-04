@@ -7,6 +7,7 @@ import { PhoneInput } from '@/components/forms/PhoneInput';
 import { AmountInput } from '@/components/forms/AmountInput';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { purchaseVTU } from '@/lib/api';
 
 const BuyAirtime: React.FC = () => {
   const navigate = useNavigate();
@@ -31,21 +32,33 @@ const BuyAirtime: React.FC = () => {
 
     setIsProcessing(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    setIsProcessing(false);
-    toast.success('Airtime purchased successfully!', {
-      icon: <CheckCircle2 className="w-5 h-5 text-success" />,
-    });
-    navigate('/');
+    try {
+      const result = await purchaseVTU({
+        service_type: 'airtime',
+        network: selectedNetwork,
+        phone: phoneNumber,
+        amount: parseInt(amount),
+      });
+
+      if (result.status === 'success') {
+        toast.success('Airtime purchased successfully!', {
+          icon: <CheckCircle2 className="w-5 h-5 text-primary" />,
+        });
+        navigate('/dashboard');
+      } else {
+        toast.error(result.message || 'Purchase failed');
+      }
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Purchase failed');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const isFormValid = selectedNetwork && phoneNumber.length === 11 && parseInt(amount) >= 50;
 
   return (
     <MobileLayout hideNav>
-      {/* Header */}
       <header className="sticky top-0 bg-background/80 backdrop-blur-lg border-b border-border px-4 py-4 z-10">
         <div className="flex items-center gap-4">
           <button
@@ -58,55 +71,26 @@ const BuyAirtime: React.FC = () => {
         </div>
       </header>
 
-      {/* Content */}
       <div className="px-4 py-6 space-y-6">
-        {/* Network Selection */}
         <div className="space-y-3">
-          <label className="text-sm font-semibold text-muted-foreground">
-            Select Network
-          </label>
-          <NetworkSelector
-            selectedNetwork={selectedNetwork}
-            onSelect={setSelectedNetwork}
-          />
+          <label className="text-sm font-semibold text-muted-foreground">Select Network</label>
+          <NetworkSelector selectedNetwork={selectedNetwork} onSelect={setSelectedNetwork} />
         </div>
 
-        {/* Phone Number */}
         <div className="space-y-3">
-          <label className="text-sm font-semibold text-muted-foreground">
-            Phone Number
-          </label>
-          <PhoneInput
-            value={phoneNumber}
-            onChange={setPhoneNumber}
-            placeholder="08012345678"
-          />
+          <label className="text-sm font-semibold text-muted-foreground">Phone Number</label>
+          <PhoneInput value={phoneNumber} onChange={setPhoneNumber} placeholder="08012345678" />
         </div>
 
-        {/* Amount */}
         <div className="space-y-3">
-          <label className="text-sm font-semibold text-muted-foreground">
-            Amount
-          </label>
-          <AmountInput
-            value={amount}
-            onChange={setAmount}
-            placeholder="0"
-            quickAmounts={[50, 100, 200, 500, 1000, 2000]}
-          />
+          <label className="text-sm font-semibold text-muted-foreground">Amount</label>
+          <AmountInput value={amount} onChange={setAmount} placeholder="0" quickAmounts={[50, 100, 200, 500, 1000, 2000]} />
         </div>
       </div>
 
-      {/* Fixed Bottom Button */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-border safe-area-bottom">
         <div className="max-w-md mx-auto">
-          <Button
-            onClick={handleSubmit}
-            disabled={!isFormValid || isProcessing}
-            className="w-full"
-            size="xl"
-            variant="gradient"
-          >
+          <Button onClick={handleSubmit} disabled={!isFormValid || isProcessing} className="w-full" size="xl" variant="gradient">
             {isProcessing ? (
               <span className="flex items-center gap-2">
                 <span className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
