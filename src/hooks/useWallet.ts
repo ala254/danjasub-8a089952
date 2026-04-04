@@ -13,10 +13,10 @@ export const useWallet = () => {
     }
 
     const { data } = await supabase
-      .from('wallets')
+      .from('wallets' as never)
       .select('balance')
       .eq('user_id', user.id)
-      .single();
+      .single() as { data: { balance: number } | null };
 
     if (data) {
       setBalance(Number(data.balance));

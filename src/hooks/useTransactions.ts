@@ -24,14 +24,14 @@ export const useTransactions = (limit = 10) => {
     }
 
     const { data } = await supabase
-      .from('transactions')
+      .from('transactions' as never)
       .select('id, type, title, description, amount, status, reference, created_at')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .limit(limit);
+      .limit(limit) as { data: DbTransaction[] | null };
 
     if (data) {
-      setTransactions(data as DbTransaction[]);
+      setTransactions(data);
     }
     setLoading(false);
   }, [limit]);
@@ -39,7 +39,6 @@ export const useTransactions = (limit = 10) => {
   useEffect(() => {
     fetchTransactions();
 
-    // Subscribe to realtime changes
     const channel = supabase
       .channel('user-transactions')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => {
