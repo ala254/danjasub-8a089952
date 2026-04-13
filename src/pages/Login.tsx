@@ -52,7 +52,8 @@ const Login: React.FC = () => {
         if (error) {
           toast.error(error.message);
         } else {
-          toast.success('Account created! Please check your email to verify your account.');
+          toast.success('Account created! Signing you in...');
+          navigate('/dashboard');
         }
       }
     } catch {
