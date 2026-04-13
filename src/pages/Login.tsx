@@ -3,26 +3,28 @@ import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PhoneInput } from '@/components/forms/PhoneInput';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
 
 type AuthMode = 'login' | 'register';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
+  const { signIn, signUp } = useAuth();
   const [mode, setMode] = useState<AuthMode>('login');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (phoneNumber.length !== 11) {
-      toast.error('Please enter a valid phone number');
+
+    if (!email.trim() || !email.includes('@')) {
+      toast.error('Please enter a valid email address');
       return;
     }
     if (password.length < 6) {
@@ -35,13 +37,29 @@ const Login: React.FC = () => {
     }
 
     setIsLoading(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    setIsLoading(false);
-    toast.success(mode === 'login' ? 'Welcome back!' : 'Account created successfully!');
-    navigate('/dashboard');
+
+    try {
+      if (mode === 'login') {
+        const { error } = await signIn(email, password);
+        if (error) {
+          toast.error(error.message);
+        } else {
+          toast.success('Welcome back!');
+          navigate('/dashboard');
+        }
+      } else {
+        const { error } = await signUp(email, password, name, phone);
+        if (error) {
+          toast.error(error.message);
+        } else {
+          toast.success('Account created! Please check your email to verify your account.');
+        }
+      }
+    } catch {
+      toast.error('Something went wrong. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -52,8 +70,8 @@ const Login: React.FC = () => {
           {mode === 'login' ? 'Welcome Back' : 'Create Account'}
         </h1>
         <p className="text-primary-foreground/80">
-          {mode === 'login' 
-            ? 'Sign in to continue to QuickPay' 
+          {mode === 'login'
+            ? 'Sign in to continue to QuickPay'
             : 'Join thousands of Nigerians on QuickPay'
           }
         </p>
@@ -90,28 +108,44 @@ const Login: React.FC = () => {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {mode === 'register' && (
-              <div className="space-y-2 animate-slide-up">
-                <label className="text-sm font-medium text-muted-foreground">
-                  Full Name
-                </label>
-                <Input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="John Doe"
-                  className="h-14"
-                />
-              </div>
+              <>
+                <div className="space-y-2 animate-slide-up">
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Full Name
+                  </label>
+                  <Input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="John Doe"
+                    className="h-14"
+                  />
+                </div>
+                <div className="space-y-2 animate-slide-up">
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Phone Number
+                  </label>
+                  <Input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="08012345678"
+                    className="h-14"
+                  />
+                </div>
+              </>
             )}
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground">
-                Phone Number
+                Email Address
               </label>
-              <PhoneInput
-                value={phoneNumber}
-                onChange={setPhoneNumber}
-                placeholder="08012345678"
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="h-14"
               />
             </div>
 
