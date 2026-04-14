@@ -2,61 +2,62 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
 
 @layer base {
   :root {
-    /* Nigerian Fintech Theme - Trust, Growth, Money */
-    --background: 210 20% 98%;
-    --foreground: 222 47% 11%;
+    /* Danjasub - Teal + Navy fintech theme */
+    --background: 180 10% 97%;
+    --foreground: 220 30% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 220 30% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 220 30% 10%;
 
-    /* Primary Green - Money/Growth */
-    --primary: 142 71% 45%;
+    /* Primary Teal - Trust & Growth */
+    --primary: 174 60% 32%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary Navy - Trust */
-    --secondary: 222 47% 20%;
+    /* Secondary Deep Navy */
+    --secondary: 220 40% 16%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 210 20% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 180 10% 94%;
+    --muted-foreground: 220 10% 46%;
 
-    /* Accent Gold - Premium */
-    --accent: 45 93% 47%;
-    --accent-foreground: 222 47% 11%;
+    /* Accent Warm Amber */
+    --accent: 38 92% 50%;
+    --accent-foreground: 220 30% 10%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 142 71% 45%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 174 60% 32%;
 
-    --radius: 1rem;
+    --radius: 0.875rem;
 
-    /* Custom fintech colors */
-    --success: 142 71% 45%;
-    --warning: 45 93% 47%;
-    --info: 199 89% 48%;
-    
+    /* Status colors */
+    --success: 152 60% 42%;
+    --warning: 38 92% 50%;
+    --info: 200 80% 50%;
+
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(142 71% 45%) 0%, hsl(142 76% 36%) 100%);
-    --gradient-hero: linear-gradient(180deg, hsl(142 71% 45%) 0%, hsl(160 84% 39%) 100%);
-    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(210 20% 98%) 100%);
-    --gradient-dark: linear-gradient(135deg, hsl(222 47% 20%) 0%, hsl(222 47% 11%) 100%);
-    
+    --gradient-primary: linear-gradient(135deg, hsl(174 60% 32%) 0%, hsl(190 70% 28%) 100%);
+    --gradient-hero: linear-gradient(160deg, hsl(220 40% 16%) 0%, hsl(174 60% 32%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(180 10% 97%) 100%);
+    --gradient-dark: linear-gradient(135deg, hsl(220 40% 16%) 0%, hsl(220 40% 10%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(38 92% 50%) 0%, hsl(28 95% 55%) 100%);
+
     /* Shadows */
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --shadow-card: 0 4px 20px -2px rgb(0 0 0 / 0.08);
-    --shadow-elevated: 0 20px 40px -8px rgb(0 0 0 / 0.12);
+    --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.04);
+    --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.08);
+    --shadow-lg: 0 12px 24px -4px rgb(0 0 0 / 0.1);
+    --shadow-card: 0 2px 16px -2px rgb(0 0 0 / 0.06);
+    --shadow-elevated: 0 16px 40px -8px rgb(0 0 0 / 0.14);
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -69,33 +70,33 @@
   }
 
   .dark {
-    --background: 222 47% 8%;
-    --foreground: 210 40% 98%;
+    --background: 220 30% 6%;
+    --foreground: 180 10% 96%;
 
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
+    --card: 220 30% 10%;
+    --card-foreground: 180 10% 96%;
 
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 220 30% 10%;
+    --popover-foreground: 180 10% 96%;
 
-    --primary: 142 71% 45%;
+    --primary: 174 60% 40%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 220 25% 20%;
+    --secondary-foreground: 180 10% 96%;
 
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 220 25% 15%;
+    --muted-foreground: 220 10% 55%;
 
-    --accent: 45 93% 47%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 38 92% 50%;
+    --accent-foreground: 220 30% 10%;
 
     --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 180 10% 96%;
 
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 142 71% 45%;
+    --border: 220 25% 18%;
+    --input: 220 25% 18%;
+    --ring: 174 60% 40%;
 
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
@@ -114,13 +115,13 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'DM Sans', system-ui, sans-serif;
   }
 
-  /* Mobile-first styles */
   html {
     -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
   }
 }
 
@@ -135,6 +136,10 @@
   
   .gradient-dark {
     background: var(--gradient-dark);
+  }
+
+  .gradient-accent {
+    background: var(--gradient-accent);
   }
   
   .shadow-card {
@@ -152,6 +157,23 @@
   .safe-area-top {
     padding-top: env(safe-area-inset-top, 0);
   }
+
+  .font-display {
+    font-family: 'Space Grotesk', 'DM Sans', system-ui, sans-serif;
+  }
+
+  .text-gradient {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .glass {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.8);
+  }
 }
 
 /* Custom scrollbar */
@@ -161,11 +183,11 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: hsl(var(--muted));
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.3);
+  background: hsl(var(--muted-foreground) / 0.2);
   border-radius: 2px;
 }
 
@@ -178,7 +200,7 @@
 @keyframes slideUp {
   from { 
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(16px);
   }
   to { 
     opacity: 1;
@@ -189,7 +211,7 @@
 @keyframes scaleIn {
   from { 
     opacity: 0;
-    transform: scale(0.95);
+    transform: scale(0.96);
   }
   to { 
     opacity: 1;
@@ -197,9 +219,14 @@
   }
 }
 
-@keyframes pulse-soft {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
 }
 
 .animate-fade-in {
@@ -207,13 +234,19 @@
 }
 
 .animate-slide-up {
-  animation: slideUp 0.4s ease-out;
+  animation: slideUp 0.4s ease-out both;
 }
 
 .animate-scale-in {
   animation: scaleIn 0.3s ease-out;
 }
 
-.animate-pulse-soft {
-  animation: pulse-soft 2s ease-in-out infinite;
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 0%, hsl(var(--primary) / 0.1) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
 }

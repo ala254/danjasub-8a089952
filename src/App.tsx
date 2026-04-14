@@ -8,6 +8,8 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import BuyAirtime from "./pages/BuyAirtime";
+import BuyData from "./pages/BuyData";
+import PayBills from "./pages/PayBills";
 import FundWallet from "./pages/FundWallet";
 import PaymentVerify from "./pages/PaymentVerify";
 import History from "./pages/History";
@@ -19,20 +21,9 @@ const queryClient = new QueryClient();
 const AppContent = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  
-  const pagesWithNav = ['/dashboard', '/history', '/wallet', '/profile'];
+
+  const pagesWithNav = ['/dashboard', '/history', '/fund-wallet', '/profile'];
   const showNav = pagesWithNav.some(path => location.pathname.startsWith(path));
-
-  const navPathMap: Record<string, string> = {
-    '/': '/dashboard',
-    '/history': '/history',
-    '/wallet': '/wallet',
-    '/profile': '/profile',
-  };
-
-  const currentNavPath = Object.keys(navPathMap).find(
-    key => location.pathname.startsWith(navPathMap[key])
-  ) || '/';
 
   return (
     <>
@@ -41,16 +32,18 @@ const AppContent = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/buy-airtime" element={<BuyAirtime />} />
+        <Route path="/buy-data" element={<BuyData />} />
+        <Route path="/pay-bills" element={<PayBills />} />
         <Route path="/fund-wallet" element={<FundWallet />} />
         <Route path="/payment/verify" element={<PaymentVerify />} />
         <Route path="/history" element={<History />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
-      
+
       {showNav && (
         <BottomNav
-          currentPath={navPathMap[currentNavPath] || '/dashboard'}
+          currentPath={location.pathname}
           onNavigate={(path) => navigate(path)}
         />
       )}
