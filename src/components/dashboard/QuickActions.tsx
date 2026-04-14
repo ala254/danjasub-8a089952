@@ -11,41 +11,11 @@ interface QuickAction {
 }
 
 const actions: QuickAction[] = [
-  { 
-    id: 'airtime', 
-    icon: Smartphone, 
-    label: 'Airtime', 
-    color: 'text-emerald-600',
-    bgColor: 'bg-emerald-100'
-  },
-  { 
-    id: 'data', 
-    icon: Wifi, 
-    label: 'Data', 
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-100'
-  },
-  { 
-    id: 'electricity', 
-    icon: Zap, 
-    label: 'Electricity', 
-    color: 'text-amber-600',
-    bgColor: 'bg-amber-100'
-  },
-  { 
-    id: 'tv', 
-    icon: Tv, 
-    label: 'TV Sub', 
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-100'
-  },
-  { 
-    id: 'more', 
-    icon: MoreHorizontal, 
-    label: 'More', 
-    color: 'text-gray-600',
-    bgColor: 'bg-gray-100'
-  },
+  { id: 'airtime', icon: Smartphone, label: 'Airtime', color: 'text-primary', bgColor: 'bg-primary/10' },
+  { id: 'data', icon: Wifi, label: 'Data', color: 'text-info', bgColor: 'bg-info/10' },
+  { id: 'electricity', icon: Zap, label: 'Electricity', color: 'text-accent', bgColor: 'bg-accent/10' },
+  { id: 'tv', icon: Tv, label: 'TV Sub', color: 'text-secondary', bgColor: 'bg-secondary/10' },
+  { id: 'more', icon: MoreHorizontal, label: 'More', color: 'text-muted-foreground', bgColor: 'bg-muted' },
 ];
 
 interface QuickActionsProps {
@@ -55,7 +25,7 @@ interface QuickActionsProps {
 export const QuickActions: React.FC<QuickActionsProps> = ({ onActionClick }) => {
   return (
     <div className="animate-slide-up" style={{ animationDelay: '0.1s' }}>
-      <h3 className="text-sm font-semibold text-muted-foreground mb-4 px-1">
+      <h3 className="text-xs font-semibold text-muted-foreground mb-3 px-1 uppercase tracking-wider">
         Quick Actions
       </h3>
       <div className="grid grid-cols-5 gap-2">
@@ -65,17 +35,12 @@ export const QuickActions: React.FC<QuickActionsProps> = ({ onActionClick }) => 
             <button
               key={action.id}
               onClick={() => onActionClick(action.id)}
-              className="flex flex-col items-center gap-2 p-3 rounded-2xl hover:bg-muted transition-all duration-200 active:scale-95"
+              className="flex flex-col items-center gap-1.5 p-3 rounded-xl hover:bg-muted/50 transition-all duration-200 active:scale-95"
             >
-              <div className={cn(
-                "w-12 h-12 rounded-xl flex items-center justify-center",
-                action.bgColor
-              )}>
+              <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", action.bgColor)}>
                 <Icon className={cn("w-5 h-5", action.color)} />
               </div>
-              <span className="text-xs font-medium text-foreground">
-                {action.label}
-              </span>
+              <span className="text-[11px] font-medium text-foreground">{action.label}</span>
             </button>
           );
         })}

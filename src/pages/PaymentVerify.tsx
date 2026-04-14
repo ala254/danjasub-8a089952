@@ -12,19 +12,11 @@ const PaymentVerify: React.FC = () => {
   const [amount, setAmount] = useState(0);
 
   useEffect(() => {
-    if (!reference) {
-      setStatus('failed');
-      return;
-    }
-
+    if (!reference) { setStatus('failed'); return; }
     verifyPayment(reference)
       .then((result) => {
-        if (result.status === 'success') {
-          setStatus('success');
-          setAmount(result.amount || 0);
-        } else {
-          setStatus('failed');
-        }
+        if (result.status === 'success') { setStatus('success'); setAmount(result.amount || 0); }
+        else { setStatus('failed'); }
       })
       .catch(() => setStatus('failed'));
   }, [reference]);
@@ -34,8 +26,8 @@ const PaymentVerify: React.FC = () => {
       {status === 'loading' && (
         <div className="text-center space-y-4">
           <Loader2 className="w-16 h-16 text-primary animate-spin mx-auto" />
-          <p className="text-lg font-semibold">Verifying payment...</p>
-          <p className="text-muted-foreground">Please wait while we confirm your payment</p>
+          <p className="text-lg font-display font-bold">Verifying payment...</p>
+          <p className="text-muted-foreground text-sm">Please wait while we confirm your payment</p>
         </div>
       )}
 
@@ -44,10 +36,8 @@ const PaymentVerify: React.FC = () => {
           <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
             <CheckCircle2 className="w-10 h-10 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold">Payment Successful!</h1>
-          <p className="text-muted-foreground">
-            ₦{amount.toLocaleString()} has been added to your wallet
-          </p>
+          <h1 className="text-2xl font-display font-bold">Payment Successful!</h1>
+          <p className="text-muted-foreground">₦{amount.toLocaleString()} has been added to your wallet</p>
           <Button onClick={() => navigate('/dashboard')} size="xl" variant="gradient" className="w-full mt-8">
             Go to Dashboard
           </Button>
@@ -59,17 +49,11 @@ const PaymentVerify: React.FC = () => {
           <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
             <XCircle className="w-10 h-10 text-destructive" />
           </div>
-          <h1 className="text-2xl font-bold">Payment Failed</h1>
-          <p className="text-muted-foreground">
-            Your payment could not be verified. Please try again.
-          </p>
+          <h1 className="text-2xl font-display font-bold">Payment Failed</h1>
+          <p className="text-muted-foreground">Your payment could not be verified.</p>
           <div className="space-y-3 mt-8 w-full">
-            <Button onClick={() => navigate('/fund-wallet')} size="xl" variant="gradient" className="w-full">
-              Try Again
-            </Button>
-            <Button onClick={() => navigate('/dashboard')} size="xl" variant="ghost" className="w-full">
-              Go to Dashboard
-            </Button>
+            <Button onClick={() => navigate('/fund-wallet')} size="xl" variant="gradient" className="w-full">Try Again</Button>
+            <Button onClick={() => navigate('/dashboard')} size="xl" variant="ghost" className="w-full">Go to Dashboard</Button>
           </div>
         </div>
       )}

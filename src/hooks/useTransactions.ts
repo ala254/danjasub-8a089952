@@ -3,11 +3,11 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface DbTransaction {
   id: string;
-  type: 'airtime' | 'data' | 'electricity' | 'tv' | 'fund' | 'withdraw';
+  type: string;
   title: string;
   description: string;
   amount: number;
-  status: 'pending' | 'success' | 'failed';
+  status: string;
   reference: string | null;
   created_at: string;
 }
@@ -24,14 +24,42 @@ export const useTransactions = (limit = 10) => {
     }
 
     const { data } = await supabase
-      .from('transactions' as never)
-      .select('id, type, title, description, amount, status, reference, created_at')
+      .from('transactions')
+      .select('id, type, amount, status, reference, created_at, metadata')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .limit(limit) as { data: DbTransaction[] | null };
+      .limit(limit);
 
     if (data) {
-      setTransactions(data);
+      const mapped: DbTransaction[] = data.map((row) => {
+        const meta = (row.metadata as Record<string, unknown>) || {};
+        const type = row.type || 'fund';
+        let title = type.charAt(0).toUpperCase() + type.slice(1);
+        let description = '';
+
+        if (meta.network) {
+          title = `${(meta.network as string).toUpperCase()} ${type === 'airtime' ? 'Airtime' : 'Data'}`;
+        }
+        if (meta.phone) {
+          description = meta.phone as string;
+        }
+        if (type === 'fund') {
+          title = 'Wallet Funded';
+          description = 'Via Paystack';
+        }
+
+        return {
+          id: row.id,
+          type,
+          title,
+          description,
+          amount: row.amount,
+          status: row.status,
+          reference: row.reference,
+          created_at: row.created_at,
+        };
+      });
+      setTransactions(mapped);
     }
     setLoading(false);
   }, [limit]);
