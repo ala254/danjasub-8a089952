@@ -14,6 +14,7 @@ import FundWallet from "./pages/FundWallet";
 import PaymentVerify from "./pages/PaymentVerify";
 import History from "./pages/History";
 import Profile from "./pages/Profile";
+import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,7 @@ const AppContent = () => {
         <Route path="/payment/verify" element={<PaymentVerify />} />
         <Route path="/history" element={<History />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/admin" element={<AdminDashboard />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
 
