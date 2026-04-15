@@ -14,6 +14,11 @@ import FundWallet from "./pages/FundWallet";
 import PaymentVerify from "./pages/PaymentVerify";
 import History from "./pages/History";
 import Profile from "./pages/Profile";
+import EditProfile from "./pages/EditProfile";
+import Security from "./pages/Security";
+import PaymentMethods from "./pages/PaymentMethods";
+import NotificationSettings from "./pages/NotificationSettings";
+import HelpSupport from "./pages/HelpSupport";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
@@ -39,6 +44,11 @@ const AppContent = () => {
         <Route path="/payment/verify" element={<PaymentVerify />} />
         <Route path="/history" element={<History />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/profile/edit" element={<EditProfile />} />
+        <Route path="/profile/security" element={<Security />} />
+        <Route path="/profile/payments" element={<PaymentMethods />} />
+        <Route path="/profile/notifications" element={<NotificationSettings />} />
+        <Route path="/help" element={<HelpSupport />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
