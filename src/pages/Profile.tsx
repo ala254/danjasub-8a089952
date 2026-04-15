@@ -115,7 +115,7 @@ const Profile: React.FC = () => {
             </div>
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
-        )
+        )}
 
         <button
           onClick={handleLogout}
