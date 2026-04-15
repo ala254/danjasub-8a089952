@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { ArrowLeft, User, Shield, CreditCard, Bell, HelpCircle, LogOut, ChevronRight, Phone, Mail, ShieldCheck } from 'lucide-react';
+import React, { useEffect, useState, useRef } from 'react';
+import { ArrowLeft, User, Shield, CreditCard, Bell, HelpCircle, LogOut, ChevronRight, Phone, Mail, ShieldCheck, Camera, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { cn } from '@/lib/utils';
@@ -26,15 +26,59 @@ const Profile: React.FC = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [profileData, setProfileData] = useState<{ full_name: string | null; phone: string | null }>({ full_name: null, phone: null });
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) return;
     supabase.rpc('has_role', { _user_id: user.id, _role: 'admin' }).then(({ data }) => setIsAdmin(!!data));
+    supabase
+      .from('profiles')
+      .select('full_name, phone, avatar_url')
+      .eq('user_id', user.id)
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          setProfileData({ full_name: data.full_name, phone: data.phone });
+          setAvatarUrl(data.avatar_url);
+        }
+      });
   }, [user]);
 
-  const fullName = user?.user_metadata?.full_name || 'User';
-  const phone = user?.user_metadata?.phone || '';
+  const fullName = profileData.full_name || user?.user_metadata?.full_name || 'User';
+  const phone = profileData.phone || user?.user_metadata?.phone || '';
   const email = user?.email || '';
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (!file.type.startsWith('image/')) { toast.error('Please select an image file'); return; }
+    if (file.size > 2 * 1024 * 1024) { toast.error('Image must be under 2MB'); return; }
+
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `${user.id}/avatar.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
+      const url = `${publicUrl}?t=${Date.now()}`;
+
+      await supabase.from('profiles').update({ avatar_url: url }).eq('user_id', user.id);
+      setAvatarUrl(url);
+      toast.success('Profile picture updated');
+    } catch (err: any) {
+      toast.error(err.message || 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleLogout = async () => {
     await signOut();
@@ -55,8 +99,24 @@ const Profile: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-primary-foreground/15 flex items-center justify-center backdrop-blur-sm">
-              <User className="w-8 h-8 text-primary-foreground" />
+            <div className="relative">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="w-16 h-16 rounded-2xl bg-primary-foreground/15 flex items-center justify-center backdrop-blur-sm overflow-hidden"
+                disabled={uploading}
+              >
+                {uploading ? (
+                  <Loader2 className="w-6 h-6 animate-spin text-primary-foreground" />
+                ) : avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-8 h-8 text-primary-foreground" />
+                )}
+              </button>
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-secondary">
+                <Camera className="w-3 h-3 text-primary-foreground" />
+              </div>
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
             </div>
             <div className="text-primary-foreground">
               <h2 className="text-lg font-display font-bold">{fullName}</h2>
