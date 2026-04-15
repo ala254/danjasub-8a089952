@@ -1,9 +1,10 @@
-import React from 'react';
-import { ArrowLeft, User, Shield, CreditCard, Bell, HelpCircle, LogOut, ChevronRight, Phone, Mail } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ArrowLeft, User, Shield, CreditCard, Bell, HelpCircle, LogOut, ChevronRight, Phone, Mail, ShieldCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface MenuItem {
@@ -24,6 +25,12 @@ const menuItems: MenuItem[] = [
 const Profile: React.FC = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.rpc('has_role', { _user_id: user.id, _role: 'admin' }).then(({ data }) => setIsAdmin(!!data));
+  }, [user]);
 
   const fullName = user?.user_metadata?.full_name || 'User';
   const phone = user?.user_metadata?.phone || '';
@@ -93,6 +100,22 @@ const Profile: React.FC = () => {
             );
           })}
         </div>
+
+        {isAdmin && (
+          <button
+            onClick={() => navigate('/admin')}
+            className="w-full flex items-center gap-3 p-4 mt-4 bg-primary/8 rounded-2xl hover:bg-primary/15 transition-colors"
+          >
+            <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
+              <ShieldCheck className="w-4.5 h-4.5 text-primary" />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="font-semibold text-sm text-foreground">Admin Dashboard</p>
+              <p className="text-xs text-muted-foreground">Manage users & transactions</p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </button>
+        )
 
         <button
           onClick={handleLogout}
