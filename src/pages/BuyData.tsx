@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
-import { ArrowLeft, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, CheckCircle2, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { NetworkSelector } from '@/components/dashboard/NetworkSelector';
 import { PhoneInput } from '@/components/forms/PhoneInput';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
-import { purchaseVTU } from '@/lib/api';
+import { purchaseVTU, fetchPlans } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 interface DataPlan {
@@ -14,36 +15,36 @@ interface DataPlan {
   name: string;
   amount: number;
   validity: string;
+  size?: string;
+  plan_type?: string;
 }
 
-const dataPlans: Record<string, DataPlan[]> = {
+// Fallback plans if API is unavailable
+const fallbackPlans: Record<string, DataPlan[]> = {
   mtn: [
-    { id: 'mtn-500mb', name: '500MB', amount: 150, validity: '30 days' },
-    { id: 'mtn-1gb', name: '1GB', amount: 260, validity: '30 days' },
-    { id: 'mtn-2gb', name: '2GB', amount: 500, validity: '30 days' },
-    { id: 'mtn-3gb', name: '3GB', amount: 750, validity: '30 days' },
-    { id: 'mtn-5gb', name: '5GB', amount: 1250, validity: '30 days' },
-    { id: 'mtn-10gb', name: '10GB', amount: 2500, validity: '30 days' },
+    { id: 'mtn-500mb', name: '500MB SME', amount: 150, validity: '30 days' },
+    { id: 'mtn-1gb', name: '1GB SME', amount: 260, validity: '30 days' },
+    { id: 'mtn-2gb', name: '2GB SME', amount: 500, validity: '30 days' },
+    { id: 'mtn-3gb', name: '3GB SME', amount: 750, validity: '30 days' },
+    { id: 'mtn-5gb', name: '5GB SME', amount: 1250, validity: '30 days' },
+    { id: 'mtn-10gb', name: '10GB SME', amount: 2500, validity: '30 days' },
   ],
   airtel: [
     { id: 'air-500mb', name: '500MB', amount: 150, validity: '30 days' },
     { id: 'air-1gb', name: '1GB', amount: 260, validity: '30 days' },
     { id: 'air-2gb', name: '2GB', amount: 500, validity: '30 days' },
     { id: 'air-5gb', name: '5GB', amount: 1250, validity: '30 days' },
-    { id: 'air-10gb', name: '10GB', amount: 2500, validity: '30 days' },
   ],
   glo: [
     { id: 'glo-500mb', name: '500MB', amount: 130, validity: '30 days' },
     { id: 'glo-1gb', name: '1GB', amount: 240, validity: '30 days' },
     { id: 'glo-2gb', name: '2GB', amount: 480, validity: '30 days' },
     { id: 'glo-5gb', name: '5GB', amount: 1200, validity: '30 days' },
-    { id: 'glo-10gb', name: '10GB', amount: 2400, validity: '30 days' },
   ],
   '9mobile': [
     { id: '9m-500mb', name: '500MB', amount: 150, validity: '30 days' },
     { id: '9m-1gb', name: '1GB', amount: 260, validity: '30 days' },
     { id: '9m-2gb', name: '2GB', amount: 500, validity: '30 days' },
-    { id: '9m-5gb', name: '5GB', amount: 1250, validity: '30 days' },
   ],
 };
 
@@ -53,8 +54,45 @@ const BuyData: React.FC = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [selectedPlan, setSelectedPlan] = useState<DataPlan | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [plans, setPlans] = useState<DataPlan[]>([]);
+  const [loadingPlans, setLoadingPlans] = useState(false);
 
-  const plans = selectedNetwork ? dataPlans[selectedNetwork] || [] : [];
+  useEffect(() => {
+    if (!selectedNetwork) {
+      setPlans([]);
+      return;
+    }
+
+    const loadPlans = async () => {
+      setLoadingPlans(true);
+      setSelectedPlan(null);
+      try {
+        const data = await fetchPlans('data', selectedNetwork);
+        if (data?.data && Array.isArray(data.data)) {
+          const networkMap: Record<string, number> = { mtn: 1, airtel: 2, glo: 3, '9mobile': 4 };
+          const networkId = networkMap[selectedNetwork];
+          const filtered = data.data
+            .filter((p: Record<string, unknown>) => p.network_id === networkId || !p.network_id)
+            .map((p: Record<string, unknown>) => ({
+              id: String(p.id || p.plan_id),
+              name: String(p.name || p.plan_name || ''),
+              amount: Number(p.amount || p.price || 0),
+              validity: String(p.validity || p.duration || '30 days'),
+              plan_type: String(p.plan_type || 'SME'),
+            }));
+          setPlans(filtered.length > 0 ? filtered : fallbackPlans[selectedNetwork] || []);
+        } else {
+          setPlans(fallbackPlans[selectedNetwork] || []);
+        }
+      } catch {
+        setPlans(fallbackPlans[selectedNetwork] || []);
+      } finally {
+        setLoadingPlans(false);
+      }
+    };
+
+    loadPlans();
+  }, [selectedNetwork]);
 
   const handleSubmit = async () => {
     if (!selectedNetwork || !selectedPlan) {
@@ -115,27 +153,35 @@ const BuyData: React.FC = () => {
           <PhoneInput value={phoneNumber} onChange={setPhoneNumber} placeholder="08012345678" />
         </div>
 
-        {selectedNetwork && plans.length > 0 && (
+        {selectedNetwork && (
           <div className="space-y-2 animate-slide-up">
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Choose Plan</label>
-            <div className="grid grid-cols-2 gap-2">
-              {plans.map((plan) => (
-                <button
-                  key={plan.id}
-                  onClick={() => setSelectedPlan(plan)}
-                  className={cn(
-                    "p-3 rounded-xl border-2 text-left transition-all duration-200",
-                    selectedPlan?.id === plan.id
-                      ? "border-primary bg-primary/5"
-                      : "border-border bg-card hover:border-primary/40"
-                  )}
-                >
-                  <p className="font-display font-bold text-foreground">{plan.name}</p>
-                  <p className="text-sm font-semibold text-primary">₦{plan.amount.toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">{plan.validity}</p>
-                </button>
-              ))}
-            </div>
+            {loadingPlans ? (
+              <div className="grid grid-cols-2 gap-2">
+                {[1, 2, 3, 4].map((i) => (
+                  <Skeleton key={i} className="h-20 rounded-xl" />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {plans.map((plan) => (
+                  <button
+                    key={plan.id}
+                    onClick={() => setSelectedPlan(plan)}
+                    className={cn(
+                      "p-3 rounded-xl border-2 text-left transition-all duration-200",
+                      selectedPlan?.id === plan.id
+                        ? "border-primary bg-primary/5"
+                        : "border-border bg-card hover:border-primary/40"
+                    )}
+                  >
+                    <p className="font-display font-bold text-foreground text-sm">{plan.name}</p>
+                    <p className="text-sm font-semibold text-primary">₦{plan.amount.toLocaleString()}</p>
+                    <p className="text-xs text-muted-foreground">{plan.validity}</p>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -145,7 +191,7 @@ const BuyData: React.FC = () => {
           <Button onClick={handleSubmit} disabled={!isFormValid || isProcessing} className="w-full" size="xl" variant="gradient">
             {isProcessing ? (
               <span className="flex items-center gap-2">
-                <span className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                <Loader2 className="w-5 h-5 animate-spin" />
                 Processing...
               </span>
             ) : (

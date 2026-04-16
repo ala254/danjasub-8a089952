@@ -1,6 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
 
+const SMEPLUG_BASE = "https://smeplug.ng/api/v1";
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -29,27 +31,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { service_type, network, phone, amount, plan_id } = await req.json();
+    const body = await req.json();
+    const { service_type, provider, smart_card_number, meter_number, meter_type, amount, plan_id, phone } = body;
 
-    // Validate inputs
-    if (!service_type || !["airtime", "data"].includes(service_type)) {
+    if (!service_type || !["cable", "electricity"].includes(service_type)) {
       return new Response(JSON.stringify({ error: "Invalid service type" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (!network || !phone || !amount || amount <= 0) {
-      return new Response(JSON.stringify({ error: "Missing required fields" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
-    // Validate phone number format
-    const phoneRegex = /^0[789][01]\d{8}$/;
-    if (!phoneRegex.test(phone)) {
-      return new Response(JSON.stringify({ error: "Invalid phone number format" }), {
-        status: 400,
+    const smeplugKey = Deno.env.get("SMEPLUG_API_KEY");
+    if (!smeplugKey) {
+      return new Response(JSON.stringify({ error: "VTU service not configured" }), {
+        status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -58,42 +53,6 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
-
-    // Duplicate prevention: check for same user+type+phone+amount in last 60s
-    const oneMinAgo = new Date(Date.now() - 60000).toISOString();
-    const { data: recentTx } = await serviceClient
-      .from("transactions")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("type", service_type)
-      .gte("created_at", oneMinAgo)
-      .in("status", ["pending", "success"])
-      .limit(1);
-
-    if (recentTx && recentTx.length > 0) {
-      // Check if it matches same phone/amount via metadata
-      const { data: dupCheck } = await serviceClient
-        .from("transactions")
-        .select("id, metadata")
-        .eq("user_id", user.id)
-        .eq("type", service_type)
-        .eq("amount", amount)
-        .gte("created_at", oneMinAgo)
-        .in("status", ["pending", "success"])
-        .limit(1);
-
-      const isDup = dupCheck?.some((t) => {
-        const m = t.metadata as Record<string, unknown>;
-        return m?.phone === phone;
-      });
-
-      if (isDup) {
-        return new Response(JSON.stringify({ error: "Duplicate transaction detected. Please wait before retrying." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    }
 
     // Check wallet balance
     const { data: wallet } = await serviceClient
@@ -109,7 +68,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const reference = `QP-VTU-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const reference = `QP-BILL-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
     // Deduct wallet balance
     const newBalance = Number(wallet.balance) - amount;
@@ -122,40 +81,28 @@ Deno.serve(async (req) => {
       amount,
       status: "pending",
       reference,
-      metadata: { network, phone, plan_id },
+      metadata: { provider, smart_card_number, meter_number, meter_type, plan_id, phone },
     });
-
-    // Call SMEPlug API
-    const smeplugKey = Deno.env.get("SMEPLUG_API_KEY");
-    if (!smeplugKey) {
-      await serviceClient.from("wallets").update({ balance: Number(wallet.balance) }).eq("user_id", user.id);
-      await serviceClient.from("transactions").update({ status: "failed" }).eq("reference", reference);
-      return new Response(JSON.stringify({ error: "VTU service not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const networkMap: Record<string, number> = {
-      mtn: 1, airtel: 2, glo: 3, "9mobile": 4,
-    };
 
     let smeplugUrl: string;
     let smeplugBody: Record<string, unknown>;
 
-    if (service_type === "airtime") {
-      smeplugUrl = "https://smeplug.ng/api/v1/airtime/purchase";
+    if (service_type === "cable") {
+      smeplugUrl = `${SMEPLUG_BASE}/cable/purchase`;
       smeplugBody = {
-        network_id: networkMap[network] || 1,
-        phone,
-        amount,
+        provider,
+        smart_card_number,
+        plan_id,
+        phone: phone || "08000000000",
       };
     } else {
-      smeplugUrl = "https://smeplug.ng/api/v1/data/purchase";
+      smeplugUrl = `${SMEPLUG_BASE}/electricity/purchase`;
       smeplugBody = {
-        network_id: networkMap[network] || 1,
-        phone,
-        plan_id,
+        provider,
+        meter_number,
+        meter_type: meter_type || "prepaid",
+        amount,
+        phone: phone || "08000000000",
       };
     }
 
@@ -179,9 +126,9 @@ Deno.serve(async (req) => {
 
       return new Response(JSON.stringify({
         status: "success",
-        message: `${service_type === "airtime" ? "Airtime" : "Data"} purchased successfully`,
+        message: `${service_type === "cable" ? "Cable TV" : "Electricity"} payment successful`,
         reference,
-        amount,
+        token: vtuData.data?.token || null,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -195,14 +142,14 @@ Deno.serve(async (req) => {
 
       return new Response(JSON.stringify({
         status: "failed",
-        message: vtuData.message || "VTU purchase failed",
+        message: vtuData.message || "Payment failed",
         reference,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
   } catch (error) {
-    console.error("VTU error:", error);
+    console.error("Bill payment error:", error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

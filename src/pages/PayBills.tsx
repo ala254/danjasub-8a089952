@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Zap, Tv, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Zap, Tv, CheckCircle2, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AmountInput } from '@/components/forms/AmountInput';
 import { toast } from 'sonner';
+import { payBill } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 type BillCategory = 'electricity' | 'tv';
@@ -37,6 +38,8 @@ const PayBills: React.FC = () => {
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
   const [meterOrCard, setMeterOrCard] = useState('');
   const [amount, setAmount] = useState('');
+  const [phone, setPhone] = useState('');
+  const [meterType, setMeterType] = useState<'prepaid' | 'postpaid'>('prepaid');
   const [isProcessing, setIsProcessing] = useState(false);
 
   const providers = category === 'electricity' ? electricityProviders : tvProviders;
@@ -56,14 +59,42 @@ const PayBills: React.FC = () => {
     }
 
     setIsProcessing(true);
-    // Bill payment integration placeholder
-    setTimeout(() => {
-      toast.success('Bill payment submitted!', {
-        icon: <CheckCircle2 className="w-5 h-5 text-primary" />,
-      });
+    try {
+      const params: Parameters<typeof payBill>[0] = category === 'electricity'
+        ? {
+            service_type: 'electricity',
+            provider: selectedProvider,
+            meter_number: meterOrCard,
+            meter_type: meterType,
+            amount: parseInt(amount),
+            phone: phone || undefined,
+          }
+        : {
+            service_type: 'cable',
+            provider: selectedProvider,
+            smart_card_number: meterOrCard,
+            amount: parseInt(amount || '0'),
+            phone: phone || undefined,
+          };
+
+      const result = await payBill(params);
+
+      if (result.status === 'success') {
+        toast.success(result.message || 'Payment successful!', {
+          icon: <CheckCircle2 className="w-5 h-5 text-primary" />,
+        });
+        if (result.token) {
+          toast.info(`Electricity Token: ${result.token}`, { duration: 15000 });
+        }
+        navigate('/dashboard');
+      } else {
+        toast.error(result.message || 'Payment failed');
+      }
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Payment failed');
+    } finally {
       setIsProcessing(false);
-      navigate('/dashboard');
-    }, 2000);
+    }
   };
 
   const isValid = selectedProvider && meterOrCard.trim() && (category === 'tv' || parseInt(amount) >= 500);
@@ -141,6 +172,45 @@ const PayBills: React.FC = () => {
           />
         </div>
 
+        {/* Meter Type (electricity only) */}
+        {category === 'electricity' && (
+          <div className="space-y-2 animate-slide-up">
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Meter Type</label>
+            <div className="flex bg-muted rounded-xl p-1">
+              <button
+                onClick={() => setMeterType('prepaid')}
+                className={cn(
+                  "flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all",
+                  meterType === 'prepaid' ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
+                )}
+              >
+                Prepaid
+              </button>
+              <button
+                onClick={() => setMeterType('postpaid')}
+                className={cn(
+                  "flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all",
+                  meterType === 'postpaid' ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
+                )}
+              >
+                Postpaid
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Phone Number (optional) */}
+        <div className="space-y-2">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Phone Number (optional)</label>
+          <Input
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="For transaction receipt"
+            className="h-14 text-lg"
+            maxLength={11}
+          />
+        </div>
+
         {/* Amount (electricity only) */}
         {category === 'electricity' && (
           <div className="space-y-2 animate-slide-up">
@@ -155,7 +225,7 @@ const PayBills: React.FC = () => {
           <Button onClick={handleSubmit} disabled={!isValid || isProcessing} className="w-full" size="xl" variant="gradient">
             {isProcessing ? (
               <span className="flex items-center gap-2">
-                <span className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                <Loader2 className="w-5 h-5 animate-spin" />
                 Processing...
               </span>
             ) : (
