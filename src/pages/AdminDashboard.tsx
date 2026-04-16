@@ -298,11 +298,34 @@ const AdminDashboard: React.FC = () => {
                         {new Date(tx.created_at).toLocaleString()}
                       </p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex flex-col items-end gap-1">
                       <p className="font-bold text-sm">₦{tx.amount.toLocaleString()}</p>
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${statusColor(tx.status)}`}>
                         {tx.status}
                       </span>
+                      {tx.status === 'failed' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 text-[10px] px-2 mt-1"
+                          onClick={async () => {
+                            try {
+                              toast({ title: 'Retrying transaction...' });
+                              const result = await retryTransaction(tx.id);
+                              if (result.status === 'success') {
+                                toast({ title: 'Transaction retried successfully' });
+                              } else {
+                                toast({ title: result.message || 'Retry failed', variant: 'destructive' });
+                              }
+                              fetchTransactions();
+                            } catch (e: unknown) {
+                              toast({ title: e instanceof Error ? e.message : 'Retry failed', variant: 'destructive' });
+                            }
+                          }}
+                        >
+                          <RotateCcw className="h-3 w-3 mr-1" /> Retry
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardContent>
