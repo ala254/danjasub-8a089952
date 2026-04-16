@@ -11,7 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Users, ArrowLeftRight, Wallet, ArrowLeft, Plus, Minus, Search, Shield } from 'lucide-react';
+import { Users, ArrowLeftRight, Wallet, ArrowLeft, Plus, Minus, Search, Shield, RotateCcw } from 'lucide-react';
+import { retryTransaction } from '@/lib/api';
 
 interface AdminUser {
   user_id: string;
