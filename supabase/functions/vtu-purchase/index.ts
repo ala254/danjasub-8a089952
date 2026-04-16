@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { service_type, network, phone, amount, plan_id, wallet_pin } = await req.json();
+    const { service_type, network, phone, amount, plan_id } = await req.json();
 
     // Validate inputs
     if (!service_type || !["airtime", "data"].includes(service_type)) {
@@ -45,23 +45,54 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Validate phone number format
+    const phoneRegex = /^0[789][01]\d{8}$/;
+    if (!phoneRegex.test(phone)) {
+      return new Response(JSON.stringify({ error: "Invalid phone number format" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const serviceClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Verify wallet PIN
-    const { data: profile } = await serviceClient
-      .from("profiles")
-      .select("wallet_pin")
-      .eq("id", user.id)
-      .single();
+    // Duplicate prevention: check for same user+type+phone+amount in last 60s
+    const oneMinAgo = new Date(Date.now() - 60000).toISOString();
+    const { data: recentTx } = await serviceClient
+      .from("transactions")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("type", service_type)
+      .gte("created_at", oneMinAgo)
+      .in("status", ["pending", "success"])
+      .limit(1);
 
-    if (profile?.wallet_pin && profile.wallet_pin !== wallet_pin) {
-      return new Response(JSON.stringify({ error: "Invalid wallet PIN" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    if (recentTx && recentTx.length > 0) {
+      // Check if it matches same phone/amount via metadata
+      const { data: dupCheck } = await serviceClient
+        .from("transactions")
+        .select("id, metadata")
+        .eq("user_id", user.id)
+        .eq("type", service_type)
+        .eq("amount", amount)
+        .gte("created_at", oneMinAgo)
+        .in("status", ["pending", "success"])
+        .limit(1);
+
+      const isDup = dupCheck?.some((t) => {
+        const m = t.metadata as Record<string, unknown>;
+        return m?.phone === phone;
       });
+
+      if (isDup) {
+        return new Response(JSON.stringify({ error: "Duplicate transaction detected. Please wait before retrying." }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // Check wallet balance
@@ -80,7 +111,7 @@ Deno.serve(async (req) => {
 
     const reference = `QP-VTU-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-    // Deduct wallet balance first
+    // Deduct wallet balance
     const newBalance = Number(wallet.balance) - amount;
     await serviceClient.from("wallets").update({ balance: newBalance }).eq("user_id", user.id);
 
@@ -88,18 +119,15 @@ Deno.serve(async (req) => {
     await serviceClient.from("transactions").insert({
       user_id: user.id,
       type: service_type,
-      title: `${network.toUpperCase()} ${service_type === "airtime" ? "Airtime" : "Data"}`,
-      description: phone,
       amount,
       status: "pending",
       reference,
-      meta: { network, phone, plan_id },
+      metadata: { network, phone, plan_id },
     });
 
     // Call SMEPlug API
     const smeplugKey = Deno.env.get("SMEPLUG_API_KEY");
     if (!smeplugKey) {
-      // Refund and mark failed
       await serviceClient.from("wallets").update({ balance: Number(wallet.balance) }).eq("user_id", user.id);
       await serviceClient.from("transactions").update({ status: "failed" }).eq("reference", reference);
       return new Response(JSON.stringify({ error: "VTU service not configured" }), {
@@ -127,7 +155,7 @@ Deno.serve(async (req) => {
       smeplugBody = {
         network_id: networkMap[network] || 1,
         phone,
-        plan_id: plan_id,
+        plan_id,
       };
     }
 
@@ -145,7 +173,7 @@ Deno.serve(async (req) => {
     if (vtuData.status === "success" || vtuData.status === true) {
       await serviceClient.from("transactions").update({
         status: "success",
-        provider_reference: vtuData.data?.transaction_id?.toString() || "",
+        provider: "smeplug",
         updated_at: new Date().toISOString(),
       }).eq("reference", reference);
 

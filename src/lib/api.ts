@@ -1,7 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
 
-const PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-
 const invokeFunction = async (functionName: string, body: Record<string, unknown>) => {
   const { data, error } = await supabase.functions.invoke(functionName, {
     body,
@@ -25,7 +23,46 @@ export const purchaseVTU = async (params: {
   phone: string;
   amount: number;
   plan_id?: string;
-  wallet_pin?: string;
 }) => {
   return invokeFunction('vtu-purchase', params);
+};
+
+export const payBill = async (params: {
+  service_type: 'cable' | 'electricity';
+  provider: string;
+  smart_card_number?: string;
+  meter_number?: string;
+  meter_type?: string;
+  amount: number;
+  plan_id?: string;
+  phone?: string;
+}) => {
+  return invokeFunction('bill-payment', params);
+};
+
+export const fetchPlans = async (service: 'data' | 'cable' | 'electricity', network?: string) => {
+  const { data, error } = await supabase.functions.invoke('smeplug-plans', {
+    body: {},
+    headers: {},
+  });
+  // Use query params via GET - but functions.invoke only does POST
+  // So we'll pass params in body and handle in the function
+  const url = new URL(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/smeplug-plans`);
+  url.searchParams.set('service', service);
+  if (network) url.searchParams.set('network', network);
+
+  const session = await supabase.auth.getSession();
+  const res = await fetch(url.toString(), {
+    headers: {
+      'Authorization': `Bearer ${session.data.session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+    },
+  });
+
+  if (!res.ok) throw new Error('Failed to fetch plans');
+  return res.json();
+};
+
+export const retryTransaction = async (transactionId: string) => {
+  return invokeFunction('retry-transaction', { transaction_id: transactionId });
 };
