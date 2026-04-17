@@ -17,8 +17,15 @@ const BuyAirtime: React.FC = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [amount, setAmount] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const { pricing: airtimePricing } = useAirtimePricing();
+  const { settings } = useAppSettings();
+
+  const markup = selectedNetwork ? (airtimePricing.get(selectedNetwork)?.markup_percent ?? 0) : 0;
+  const faceValue = parseInt(amount) || 0;
+  const youPay = Math.round(faceValue * (1 + markup / 100));
 
   const handleSubmit = async () => {
+    if (settings && !settings.airtime_enabled) { toast.error('Airtime service is currently disabled'); return; }
     if (!selectedNetwork) { toast.error('Please select a network'); return; }
     if (phoneNumber.length !== 11) { toast.error('Please enter a valid phone number'); return; }
     if (!amount || parseInt(amount) < 50) { toast.error('Minimum amount is ₦50'); return; }
@@ -44,7 +51,7 @@ const BuyAirtime: React.FC = () => {
     }
   };
 
-  const isFormValid = selectedNetwork && phoneNumber.length === 11 && parseInt(amount) >= 50;
+  const isFormValid = selectedNetwork && phoneNumber.length === 11 && parseInt(amount) >= 50 && (!settings || settings.airtime_enabled);
 
   return (
     <MobileLayout hideNav>
