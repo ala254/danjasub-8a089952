@@ -339,7 +339,72 @@ const AdminDashboard: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="transactions" className="space-y-3 mt-3">
-            {transactions.map(tx => (
+            {/* Filters */}
+            <div className="space-y-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search user, phone, reference..."
+                  value={txSearch}
+                  onChange={e => setTxSearch(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Select value={txStatus} onValueChange={setTxStatus}>
+                  <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All statuses</SelectItem>
+                    <SelectItem value="success">Success</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="failed">Failed</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={txType} onValueChange={setTxType}>
+                  <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Type" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All types</SelectItem>
+                    {txTypes.map(t => (
+                      <SelectItem key={t} value={t} className="capitalize">{t.replace('_', ' ')}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className={cn("h-9 text-xs justify-start font-normal", !txDateFrom && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-3 w-3" />
+                      {txDateFrom ? format(txDateFrom, 'MMM d, yyyy') : 'From date'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={txDateFrom} onSelect={setTxDateFrom} initialFocus className="p-3 pointer-events-auto" />
+                  </PopoverContent>
+                </Popover>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className={cn("h-9 text-xs justify-start font-normal", !txDateTo && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-3 w-3" />
+                      {txDateTo ? format(txDateTo, 'MMM d, yyyy') : 'To date'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={txDateTo} onSelect={setTxDateTo} initialFocus className="p-3 pointer-events-auto" />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>{filteredTransactions.length} of {transactions.length}</span>
+                {hasFilters && (
+                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={clearFilters}>
+                    <X className="h-3 w-3 mr-1" /> Clear
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {filteredTransactions.map(tx => (
               <Card key={tx.id} className="border-0 bg-card/80">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
