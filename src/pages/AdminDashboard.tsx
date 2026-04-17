@@ -11,7 +11,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Users, ArrowLeftRight, Wallet, ArrowLeft, Plus, Minus, Search, Shield, RotateCcw } from 'lucide-react';
+import { Users, ArrowLeftRight, Wallet, ArrowLeft, Plus, Minus, Search, Shield, RotateCcw, X, CalendarIcon } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { retryTransaction } from '@/lib/api';
 
 interface AdminUser {
