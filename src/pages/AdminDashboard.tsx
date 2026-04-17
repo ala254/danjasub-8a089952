@@ -11,19 +11,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Users, ArrowLeftRight, Wallet, ArrowLeft, Plus, Minus, Search, Shield, RotateCcw, X, CalendarIcon } from 'lucide-react';
+import { Users, ArrowLeftRight, Wallet, ArrowLeft, Plus, Minus, Search, Shield, RotateCcw, X, CalendarIcon, Ban, CheckCircle2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { AdminPricingTab } from '@/components/admin/AdminPricingTab';
+import { AdminSettingsTab } from '@/components/admin/AdminSettingsTab';
 import { retryTransaction } from '@/lib/api';
 
 interface AdminUser {
   user_id: string;
   full_name: string | null;
   phone: string | null;
+  email?: string | null;
   created_at: string;
   balance: number;
+  is_suspended?: boolean;
+  total_tx?: number;
 }
 
 interface AdminTransaction {
