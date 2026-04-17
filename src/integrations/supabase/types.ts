@@ -14,6 +14,102 @@ export type Database = {
   }
   public: {
     Tables: {
+      airtime_pricing: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          markup_percent: number
+          network: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          markup_percent?: number
+          network: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          markup_percent?: number
+          network?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      app_settings: {
+        Row: {
+          airtime_enabled: boolean
+          bills_enabled: boolean
+          created_at: string
+          data_enabled: boolean
+          id: string
+          min_funding_amount: number
+          transaction_charge: number
+          updated_at: string
+        }
+        Insert: {
+          airtime_enabled?: boolean
+          bills_enabled?: boolean
+          created_at?: string
+          data_enabled?: boolean
+          id?: string
+          min_funding_amount?: number
+          transaction_charge?: number
+          updated_at?: string
+        }
+        Update: {
+          airtime_enabled?: boolean
+          bills_enabled?: boolean
+          created_at?: string
+          data_enabled?: boolean
+          id?: string
+          min_funding_amount?: number
+          transaction_charge?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      data_plan_pricing: {
+        Row: {
+          cost_price: number
+          created_at: string
+          id: string
+          is_active: boolean
+          network: string
+          plan_id: string
+          plan_name: string | null
+          selling_price: number
+          updated_at: string
+        }
+        Insert: {
+          cost_price?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          network: string
+          plan_id: string
+          plan_name?: string | null
+          selling_price?: number
+          updated_at?: string
+        }
+        Update: {
+          cost_price?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          network?: string
+          plan_id?: string
+          plan_name?: string | null
+          selling_price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -101,6 +197,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_status: {
+        Row: {
+          created_at: string
+          id: string
+          is_suspended: boolean
+          suspended_at: string | null
+          suspended_by: string | null
+          suspension_reason: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_suspended?: boolean
+          suspended_at?: string | null
+          suspended_by?: string | null
+          suspension_reason?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_suspended?: boolean
+          suspended_at?: string | null
+          suspended_by?: string | null
+          suspension_reason?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       wallets: {
         Row: {
           balance: number
@@ -143,6 +272,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_user_suspended: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
