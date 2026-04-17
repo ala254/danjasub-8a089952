@@ -83,7 +83,13 @@ const Dashboard: React.FC = () => {
 
       {/* Main Content */}
       <div className="px-4 py-6 space-y-6">
-        <QuickActions onActionClick={handleActionClick} />
+        {suspended && (
+          <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/30">
+            <p className="text-sm font-semibold text-destructive">Account suspended</p>
+            <p className="text-xs text-muted-foreground">Transactions are blocked. Contact support.</p>
+          </div>
+        )}
+        <QuickActions onActionClick={handleActionClick} disabledIds={disabledIds} />
         <RecentTransactions
           transactions={mappedTransactions}
           onViewAll={() => navigate('/history')}
