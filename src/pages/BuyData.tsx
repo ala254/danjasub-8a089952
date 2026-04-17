@@ -158,6 +158,13 @@ const BuyData: React.FC = () => {
           <PhoneInput value={phoneNumber} onChange={setPhoneNumber} placeholder="08012345678" />
         </div>
 
+        {settings && !settings.data_enabled && (
+          <Card className="p-4 border-destructive/40 bg-destructive/5">
+            <p className="text-sm font-semibold text-destructive">Data service is currently unavailable</p>
+            <p className="text-xs text-muted-foreground mt-1">Please check back later.</p>
+          </Card>
+        )}
+
         {selectedNetwork && (
           <div className="space-y-2 animate-slide-up">
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Choose Plan</label>
@@ -169,22 +176,27 @@ const BuyData: React.FC = () => {
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-2">
-                {plans.map((plan) => (
-                  <button
-                    key={plan.id}
-                    onClick={() => setSelectedPlan(plan)}
-                    className={cn(
-                      "p-3 rounded-xl border-2 text-left transition-all duration-200",
-                      selectedPlan?.id === plan.id
-                        ? "border-primary bg-primary/5"
-                        : "border-border bg-card hover:border-primary/40"
-                    )}
-                  >
-                    <p className="font-display font-bold text-foreground text-sm">{plan.name}</p>
-                    <p className="text-sm font-semibold text-primary">₦{plan.amount.toLocaleString()}</p>
-                    <p className="text-xs text-muted-foreground">{plan.validity}</p>
-                  </button>
-                ))}
+                {plans.map((plan) => {
+                  const override = dataPricing.get(`${selectedNetwork}:${plan.id}`);
+                  const displayAmount = override?.selling_price ?? plan.amount;
+                  const displayed: DataPlan = { ...plan, amount: displayAmount };
+                  return (
+                    <button
+                      key={plan.id}
+                      onClick={() => setSelectedPlan(displayed)}
+                      className={cn(
+                        "p-3 rounded-xl border-2 text-left transition-all duration-200",
+                        selectedPlan?.id === plan.id
+                          ? "border-primary bg-primary/5"
+                          : "border-border bg-card hover:border-primary/40"
+                      )}
+                    >
+                      <p className="font-display font-bold text-foreground text-sm">{plan.name}</p>
+                      <p className="text-sm font-semibold text-primary">₦{displayAmount.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">{plan.validity}</p>
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
