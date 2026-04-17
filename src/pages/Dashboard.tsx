@@ -17,10 +17,22 @@ const Dashboard: React.FC = () => {
   const { balance, loading: walletLoading } = useWallet();
   const { transactions, loading: txLoading } = useTransactions(10);
 
+  const { transactions, loading: txLoading } = useTransactions(10);
+  const { settings } = useAppSettings();
+  const { suspended, reason } = useSuspensionStatus();
+
   const userName = user?.user_metadata?.full_name || 'User';
   const firstName = userName.split(' ')[0];
 
+  const disabledIds: string[] = [];
+  if (settings) {
+    if (!settings.airtime_enabled) disabledIds.push('airtime');
+    if (!settings.data_enabled) disabledIds.push('data');
+    if (!settings.bills_enabled) { disabledIds.push('electricity'); disabledIds.push('tv'); disabledIds.push('more'); }
+  }
+
   const handleActionClick = (actionId: string) => {
+    if (suspended) { toast.error('Your account is suspended'); return; }
     const routes: Record<string, string> = {
       airtime: '/buy-airtime',
       data: '/buy-data',
