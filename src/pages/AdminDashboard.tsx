@@ -81,15 +81,39 @@ const AdminDashboard: React.FC = () => {
     const { data: profiles } = await supabase.from('profiles').select('user_id, full_name, phone, created_at');
     if (!profiles) return;
 
-    const userIds = profiles.map(p => p.user_id);
-    const { data: wallets } = await supabase.from('wallets').select('user_id, balance');
+    const [{ data: wallets }, { data: statuses }, { data: txs }] = await Promise.all([
+      supabase.from('wallets').select('user_id, balance'),
+      supabase.from('user_status').select('user_id, is_suspended'),
+      supabase.from('transactions').select('user_id'),
+    ]);
     const walletMap = new Map((wallets || []).map(w => [w.user_id, Number(w.balance)]));
+    const susMap = new Map((statuses || []).map(s => [s.user_id, s.is_suspended]));
+    const txCount = new Map<string, number>();
+    (txs || []).forEach(t => txCount.set(t.user_id, (txCount.get(t.user_id) || 0) + 1));
 
     setUsers(profiles.map(p => ({
       ...p,
       balance: walletMap.get(p.user_id) || 0,
+      is_suspended: !!susMap.get(p.user_id),
+      total_tx: txCount.get(p.user_id) || 0,
     })));
   }, []);
+
+  const toggleSuspend = async (u: AdminUser) => {
+    const next = !u.is_suspended;
+    const { error } = await supabase.from('user_status').upsert({
+      user_id: u.user_id,
+      is_suspended: next,
+      suspended_by: next ? user?.id : null,
+      suspended_at: next ? new Date().toISOString() : null,
+    }, { onConflict: 'user_id' });
+    if (error) {
+      toast({ title: 'Failed to update status', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: next ? 'User suspended' : 'User unsuspended' });
+      fetchUsers();
+    }
+  };
 
   const fetchTransactions = useCallback(async () => {
     const { data } = await supabase
