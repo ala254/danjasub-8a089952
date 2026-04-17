@@ -174,6 +174,36 @@ const AdminDashboard: React.FC = () => {
     (u.phone || '').includes(searchQuery)
   );
 
+  const txTypes = Array.from(new Set(transactions.map(t => t.type)));
+  const filteredTransactions = transactions.filter(tx => {
+    if (txStatus !== 'all') {
+      const norm = tx.status === 'completed' ? 'success' : tx.status;
+      if (norm !== txStatus) return false;
+    }
+    if (txType !== 'all' && tx.type !== txType) return false;
+    if (txSearch) {
+      const q = txSearch.toLowerCase();
+      const phone = String(tx.metadata?.phone || '').toLowerCase();
+      const ref = (tx.reference || '').toLowerCase();
+      if (
+        !(tx.user_name || '').toLowerCase().includes(q) &&
+        !phone.includes(q) &&
+        !ref.includes(q)
+      ) return false;
+    }
+    if (txDateFrom && new Date(tx.created_at) < txDateFrom) return false;
+    if (txDateTo) {
+      const end = new Date(txDateTo);
+      end.setHours(23, 59, 59, 999);
+      if (new Date(tx.created_at) > end) return false;
+    }
+    return true;
+  });
+  const hasFilters = !!(txSearch || txStatus !== 'all' || txType !== 'all' || txDateFrom || txDateTo);
+  const clearFilters = () => {
+    setTxSearch(''); setTxStatus('all'); setTxType('all'); setTxDateFrom(undefined); setTxDateTo(undefined);
+  };
+
   const statusColor = (s: string) => {
     if (s === 'completed' || s === 'success') return 'bg-emerald-100 text-emerald-700';
     if (s === 'failed') return 'bg-red-100 text-red-700';
