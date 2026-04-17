@@ -48,13 +48,16 @@ export const useTransactions = (limit = 10) => {
           description = 'Via Paystack';
         }
 
+        // Normalize statuses: "completed" → "success"
+        const status = row.status === 'completed' ? 'success' : row.status;
+
         return {
           id: row.id,
           type,
           title,
           description,
           amount: row.amount,
-          status: row.status,
+          status,
           reference: row.reference,
           created_at: row.created_at,
         };

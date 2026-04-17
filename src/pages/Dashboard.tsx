@@ -13,7 +13,7 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { balance, loading: walletLoading } = useWallet();
-  const { transactions, loading: txLoading } = useTransactions(5);
+  const { transactions, loading: txLoading } = useTransactions(10);
 
   const userName = user?.user_metadata?.full_name || 'User';
   const firstName = userName.split(' ')[0];
