@@ -78,7 +78,18 @@ const BuyAirtime: React.FC = () => {
         <div className="space-y-2">
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Amount</label>
           <AmountInput value={amount} onChange={setAmount} placeholder="0" quickAmounts={[50, 100, 200, 500, 1000, 2000]} />
+          {selectedNetwork && faceValue > 0 && markup > 0 && (
+            <p className="text-xs text-muted-foreground pt-1">
+              You'll be charged <span className="font-semibold text-foreground">₦{youPay.toLocaleString()}</span> for ₦{faceValue.toLocaleString()} airtime ({markup}% fee)
+            </p>
+          )}
         </div>
+
+        {settings && !settings.airtime_enabled && (
+          <div className="p-4 rounded-xl border border-destructive/40 bg-destructive/5">
+            <p className="text-sm font-semibold text-destructive">Airtime service is currently unavailable</p>
+          </div>
+        )}
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/90 backdrop-blur-lg border-t border-border safe-area-bottom">
@@ -90,7 +101,7 @@ const BuyAirtime: React.FC = () => {
                 Processing...
               </span>
             ) : (
-              `Buy ₦${amount || '0'} Airtime`
+              `Buy ₦${amount || '0'} Airtime${markup > 0 && faceValue > 0 ? ` (Pay ₦${youPay.toLocaleString()})` : ''}`
             )}
           </Button>
         </div>
