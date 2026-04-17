@@ -9,6 +9,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { purchaseVTU, fetchPlans } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { useDataPricing } from '@/hooks/usePricing';
+import { useAppSettings } from '@/hooks/useAppSettings';
+import { Card } from '@/components/ui/card';
 
 interface DataPlan {
   id: string;
@@ -56,6 +59,8 @@ const BuyData: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [plans, setPlans] = useState<DataPlan[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(false);
+  const { pricing: dataPricing } = useDataPricing(selectedNetwork || undefined);
+  const { settings } = useAppSettings();
 
   useEffect(() => {
     if (!selectedNetwork) {

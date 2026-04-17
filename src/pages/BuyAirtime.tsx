@@ -8,6 +8,8 @@ import { AmountInput } from '@/components/forms/AmountInput';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { purchaseVTU } from '@/lib/api';
+import { useAirtimePricing } from '@/hooks/usePricing';
+import { useAppSettings } from '@/hooks/useAppSettings';
 
 const BuyAirtime: React.FC = () => {
   const navigate = useNavigate();
