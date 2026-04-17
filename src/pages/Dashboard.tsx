@@ -16,10 +16,8 @@ const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const { balance, loading: walletLoading } = useWallet();
   const { transactions, loading: txLoading } = useTransactions(10);
-
-  const { transactions, loading: txLoading } = useTransactions(10);
   const { settings } = useAppSettings();
-  const { suspended, reason } = useSuspensionStatus();
+  const { suspended } = useSuspensionStatus();
 
   const userName = user?.user_metadata?.full_name || 'User';
   const firstName = userName.split(' ')[0];
