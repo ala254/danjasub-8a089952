@@ -122,7 +122,8 @@ Deno.serve(async (req) => {
       amount,
       status: "pending",
       reference,
-      metadata: { network, phone, plan_id },
+      provider: "smeplug",
+      metadata: { network, phone, plan_id, timestamp: new Date().toISOString() },
     });
 
     // Call SMEPlug API
@@ -170,16 +171,19 @@ Deno.serve(async (req) => {
 
     const vtuData = await vtuRes.json();
 
+    const successMessage = vtuData.message || `${service_type === "airtime" ? "Airtime" : "Data"} purchased successfully`;
+
     if (vtuData.status === "success" || vtuData.status === true) {
       await serviceClient.from("transactions").update({
         status: "success",
         provider: "smeplug",
         updated_at: new Date().toISOString(),
+        metadata: { network, phone, plan_id, api_response: vtuData, api_message: successMessage, timestamp: new Date().toISOString() },
       }).eq("reference", reference);
 
       return new Response(JSON.stringify({
         status: "success",
-        message: `${service_type === "airtime" ? "Airtime" : "Data"} purchased successfully`,
+        message: successMessage,
         reference,
         amount,
       }), {
@@ -188,14 +192,16 @@ Deno.serve(async (req) => {
     } else {
       // Refund on failure
       await serviceClient.from("wallets").update({ balance: Number(wallet.balance) }).eq("user_id", user.id);
+      const failMessage = vtuData.message || "VTU purchase failed";
       await serviceClient.from("transactions").update({
         status: "failed",
         updated_at: new Date().toISOString(),
+        metadata: { network, phone, plan_id, api_response: vtuData, api_message: failMessage, timestamp: new Date().toISOString() },
       }).eq("reference", reference);
 
       return new Response(JSON.stringify({
         status: "failed",
-        message: vtuData.message || "VTU purchase failed",
+        message: failMessage,
         reference,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
