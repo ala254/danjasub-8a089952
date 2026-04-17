@@ -313,9 +313,11 @@ const AdminDashboard: React.FC = () => {
         </div>
 
         <Tabs defaultValue="users">
-          <TabsList className="w-full">
-            <TabsTrigger value="users" className="flex-1">Users</TabsTrigger>
-            <TabsTrigger value="transactions" className="flex-1">Transactions</TabsTrigger>
+          <TabsList className="w-full grid grid-cols-4">
+            <TabsTrigger value="users" className="text-xs">Users</TabsTrigger>
+            <TabsTrigger value="transactions" className="text-xs">Txns</TabsTrigger>
+            <TabsTrigger value="pricing" className="text-xs">Pricing</TabsTrigger>
+            <TabsTrigger value="settings" className="text-xs">Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="space-y-3 mt-3">
@@ -334,15 +336,20 @@ const AdminDashboard: React.FC = () => {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-sm truncate">{u.full_name || 'No Name'}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-sm truncate">{u.full_name || 'No Name'}</p>
+                        {u.is_suspended && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-destructive/15 text-destructive font-semibold">SUSPENDED</span>
+                        )}
+                      </div>
                       <p className="text-xs text-muted-foreground">{u.phone || 'No phone'}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Joined {new Date(u.created_at).toLocaleDateString()}
+                      <p className="text-[10px] text-muted-foreground">
+                        {u.total_tx ?? 0} txns • Joined {new Date(u.created_at).toLocaleDateString()}
                       </p>
                     </div>
                     <div className="text-right flex flex-col items-end gap-2">
                       <p className="font-bold text-sm">₦{u.balance.toLocaleString()}</p>
-                      <div className="flex gap-1">
+                      <div className="flex gap-1 flex-wrap justify-end">
                         <Button
                           size="sm"
                           variant="soft"
@@ -359,12 +366,29 @@ const AdminDashboard: React.FC = () => {
                         >
                           <Minus className="h-3 w-3 mr-1" /> Debit
                         </Button>
+                        <Button
+                          size="sm"
+                          variant={u.is_suspended ? 'soft' : 'outline'}
+                          className={cn("h-7 text-xs px-2", !u.is_suspended && "text-destructive")}
+                          onClick={() => toggleSuspend(u)}
+                        >
+                          {u.is_suspended ? <CheckCircle2 className="h-3 w-3 mr-1" /> : <Ban className="h-3 w-3 mr-1" />}
+                          {u.is_suspended ? 'Unsuspend' : 'Suspend'}
+                        </Button>
                       </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             ))}
+          </TabsContent>
+
+          <TabsContent value="pricing" className="mt-3">
+            <AdminPricingTab />
+          </TabsContent>
+
+          <TabsContent value="settings" className="mt-3">
+            <AdminSettingsTab />
           </TabsContent>
 
           <TabsContent value="transactions" className="space-y-3 mt-3">
