@@ -41,12 +41,6 @@ export const payBill = async (params: {
 };
 
 export const fetchPlans = async (service: 'data' | 'cable' | 'electricity', network?: string) => {
-  const { data, error } = await supabase.functions.invoke('smeplug-plans', {
-    body: {},
-    headers: {},
-  });
-  // Use query params via GET - but functions.invoke only does POST
-  // So we'll pass params in body and handle in the function
   const url = new URL(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/smeplug-plans`);
   url.searchParams.set('service', service);
   if (network) url.searchParams.set('network', network);
