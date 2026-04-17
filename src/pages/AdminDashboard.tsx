@@ -164,10 +164,14 @@ const AdminDashboard: React.FC = () => {
   );
 
   const statusColor = (s: string) => {
-    if (s === 'completed') return 'bg-emerald-100 text-emerald-700';
+    if (s === 'completed' || s === 'success') return 'bg-emerald-100 text-emerald-700';
     if (s === 'failed') return 'bg-red-100 text-red-700';
     return 'bg-yellow-100 text-yellow-700';
   };
+
+  const totalRevenue = transactions
+    .filter(t => (t.status === 'success' || t.status === 'completed') && ['airtime', 'data', 'cable', 'electricity'].includes(t.type))
+    .reduce((sum, t) => sum + Number(t.amount), 0);
 
   if (checking) {
     return (
@@ -207,12 +211,12 @@ const AdminDashboard: React.FC = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-0">
             <CardContent className="p-3 text-center">
               <Users className="h-5 w-5 mx-auto text-primary mb-1" />
               <p className="text-lg font-bold">{users.length}</p>
-              <p className="text-[10px] text-muted-foreground">Users</p>
+              <p className="text-[10px] text-muted-foreground">Total Users</p>
             </CardContent>
           </Card>
           <Card className="bg-gradient-to-br from-accent/10 to-accent/5 border-0">
@@ -222,11 +226,18 @@ const AdminDashboard: React.FC = () => {
               <p className="text-[10px] text-muted-foreground">Transactions</p>
             </CardContent>
           </Card>
-          <Card className="bg-gradient-to-br from-secondary/50 to-secondary/20 border-0">
+          <Card className="col-span-2 bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border-0">
+            <CardContent className="p-3 text-center">
+              <Wallet className="h-5 w-5 mx-auto text-emerald-600 mb-1" />
+              <p className="text-lg font-bold">₦{totalRevenue.toLocaleString()}</p>
+              <p className="text-[10px] text-muted-foreground">Total Revenue (VTU)</p>
+            </CardContent>
+          </Card>
+          <Card className="col-span-2 bg-gradient-to-br from-secondary/50 to-secondary/20 border-0">
             <CardContent className="p-3 text-center">
               <Wallet className="h-5 w-5 mx-auto text-secondary-foreground mb-1" />
               <p className="text-lg font-bold">₦{users.reduce((a, u) => a + u.balance, 0).toLocaleString()}</p>
-              <p className="text-[10px] text-muted-foreground">Total Balance</p>
+              <p className="text-[10px] text-muted-foreground">Total User Balances</p>
             </CardContent>
           </Card>
         </div>
@@ -294,12 +305,17 @@ const AdminDashboard: React.FC = () => {
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold text-sm capitalize">{tx.type.replace('_', ' ')}</p>
                       <p className="text-xs text-muted-foreground">{tx.user_name}</p>
+                      {tx.metadata?.api_message ? (
+                        <p className="text-[10px] text-muted-foreground italic truncate">
+                          {String(tx.metadata.api_message)}
+                        </p>
+                      ) : null}
                       <p className="text-[10px] text-muted-foreground">
                         {new Date(tx.created_at).toLocaleString()}
                       </p>
                     </div>
                     <div className="text-right flex flex-col items-end gap-1">
-                      <p className="font-bold text-sm">₦{tx.amount.toLocaleString()}</p>
+                      <p className="font-bold text-sm">₦{Number(tx.amount).toLocaleString()}</p>
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${statusColor(tx.status)}`}>
                         {tx.status}
                       </span>
