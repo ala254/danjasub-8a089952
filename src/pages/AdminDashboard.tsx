@@ -453,8 +453,10 @@ const AdminDashboard: React.FC = () => {
                 </CardContent>
               </Card>
             ))}
-            {transactions.length === 0 && (
-              <p className="text-center text-muted-foreground text-sm py-8">No transactions yet</p>
+            {filteredTransactions.length === 0 && (
+              <p className="text-center text-muted-foreground text-sm py-8">
+                {hasFilters ? 'No transactions match filters' : 'No transactions yet'}
+              </p>
             )}
           </TabsContent>
         </Tabs>
