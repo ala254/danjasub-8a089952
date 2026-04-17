@@ -8,17 +8,29 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useWallet } from '@/hooks/useWallet';
 import { useTransactions } from '@/hooks/useTransactions';
+import { useAppSettings, useSuspensionStatus } from '@/hooks/useAppSettings';
+import { toast } from 'sonner';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { balance, loading: walletLoading } = useWallet();
   const { transactions, loading: txLoading } = useTransactions(10);
+  const { settings } = useAppSettings();
+  const { suspended } = useSuspensionStatus();
 
   const userName = user?.user_metadata?.full_name || 'User';
   const firstName = userName.split(' ')[0];
 
+  const disabledIds: string[] = [];
+  if (settings) {
+    if (!settings.airtime_enabled) disabledIds.push('airtime');
+    if (!settings.data_enabled) disabledIds.push('data');
+    if (!settings.bills_enabled) { disabledIds.push('electricity'); disabledIds.push('tv'); disabledIds.push('more'); }
+  }
+
   const handleActionClick = (actionId: string) => {
+    if (suspended) { toast.error('Your account is suspended'); return; }
     const routes: Record<string, string> = {
       airtime: '/buy-airtime',
       data: '/buy-data',
@@ -71,7 +83,13 @@ const Dashboard: React.FC = () => {
 
       {/* Main Content */}
       <div className="px-4 py-6 space-y-6">
-        <QuickActions onActionClick={handleActionClick} />
+        {suspended && (
+          <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/30">
+            <p className="text-sm font-semibold text-destructive">Account suspended</p>
+            <p className="text-xs text-muted-foreground">Transactions are blocked. Contact support.</p>
+          </div>
+        )}
+        <QuickActions onActionClick={handleActionClick} disabledIds={disabledIds} />
         <RecentTransactions
           transactions={mappedTransactions}
           onViewAll={() => navigate('/history')}

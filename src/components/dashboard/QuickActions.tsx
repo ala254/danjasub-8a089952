@@ -20,9 +20,10 @@ const actions: QuickAction[] = [
 
 interface QuickActionsProps {
   onActionClick: (actionId: string) => void;
+  disabledIds?: string[];
 }
 
-export const QuickActions: React.FC<QuickActionsProps> = ({ onActionClick }) => {
+export const QuickActions: React.FC<QuickActionsProps> = ({ onActionClick, disabledIds = [] }) => {
   return (
     <div className="animate-slide-up" style={{ animationDelay: '0.1s' }}>
       <h3 className="text-xs font-semibold text-muted-foreground mb-3 px-1 uppercase tracking-wider">
@@ -31,11 +32,16 @@ export const QuickActions: React.FC<QuickActionsProps> = ({ onActionClick }) => 
       <div className="grid grid-cols-5 gap-2">
         {actions.map((action) => {
           const Icon = action.icon;
+          const disabled = disabledIds.includes(action.id);
           return (
             <button
               key={action.id}
-              onClick={() => onActionClick(action.id)}
-              className="flex flex-col items-center gap-1.5 p-3 rounded-xl hover:bg-muted/50 transition-all duration-200 active:scale-95"
+              onClick={() => !disabled && onActionClick(action.id)}
+              disabled={disabled}
+              className={cn(
+                "flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all duration-200",
+                disabled ? "opacity-40 cursor-not-allowed" : "hover:bg-muted/50 active:scale-95"
+              )}
             >
               <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", action.bgColor)}>
                 <Icon className={cn("w-5 h-5", action.color)} />
