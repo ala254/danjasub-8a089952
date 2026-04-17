@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } }
     );
 
@@ -31,8 +31,26 @@ Deno.serve(async (req) => {
 
     const { amount, email } = await req.json();
 
-    if (!amount || amount < 100) {
-      return new Response(JSON.stringify({ error: "Minimum amount is ₦100" }), {
+    const serviceClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // Block suspended users
+    const { data: suspendedRes } = await serviceClient.rpc("is_user_suspended", { _user_id: user.id });
+    if (suspendedRes === true) {
+      return new Response(JSON.stringify({ error: "Your account is suspended. Please contact support." }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Enforce admin minimum funding amount
+    const { data: settings } = await serviceClient.from("app_settings").select("min_funding_amount").limit(1).maybeSingle();
+    const minAmount = settings?.min_funding_amount ? Number(settings.min_funding_amount) : 100;
+
+    if (!amount || amount < minAmount) {
+      return new Response(JSON.stringify({ error: `Minimum amount is ₦${minAmount}` }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -48,23 +66,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Create pending transaction
-    const serviceClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
     await serviceClient.from("transactions").insert({
       user_id: user.id,
       type: "fund",
-      title: "Wallet Funding",
-      description: "Via Paystack",
       amount: amount,
       status: "pending",
       reference,
     });
 
-    // Initialize Paystack transaction
     const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
       headers: {
@@ -73,7 +82,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         email: email || user.email,
-        amount: amount * 100, // Paystack uses kobo
+        amount: amount * 100,
         reference,
         callback_url: `${req.headers.get("origin")}/payment/verify?reference=${reference}`,
         metadata: {
@@ -102,6 +111,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
+    console.error("paystack-initialize error", error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
