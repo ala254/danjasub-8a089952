@@ -54,6 +54,13 @@ const AdminDashboard: React.FC = () => {
   const [walletAmount, setWalletAmount] = useState('');
   const [processing, setProcessing] = useState(false);
 
+  // Transaction filters
+  const [txSearch, setTxSearch] = useState('');
+  const [txStatus, setTxStatus] = useState<string>('all');
+  const [txType, setTxType] = useState<string>('all');
+  const [txDateFrom, setTxDateFrom] = useState<Date | undefined>();
+  const [txDateTo, setTxDateTo] = useState<Date | undefined>();
+
   // Check admin role
   useEffect(() => {
     const checkAdmin = async () => {
