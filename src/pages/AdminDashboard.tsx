@@ -11,7 +11,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Users, ArrowLeftRight, Wallet, ArrowLeft, Plus, Minus, Search, Shield, RotateCcw } from 'lucide-react';
+import { Users, ArrowLeftRight, Wallet, ArrowLeft, Plus, Minus, Search, Shield, RotateCcw, X, CalendarIcon } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { retryTransaction } from '@/lib/api';
 
 interface AdminUser {
@@ -49,6 +53,13 @@ const AdminDashboard: React.FC = () => {
   const [walletAction, setWalletAction] = useState<'credit' | 'debit'>('credit');
   const [walletAmount, setWalletAmount] = useState('');
   const [processing, setProcessing] = useState(false);
+
+  // Transaction filters
+  const [txSearch, setTxSearch] = useState('');
+  const [txStatus, setTxStatus] = useState<string>('all');
+  const [txType, setTxType] = useState<string>('all');
+  const [txDateFrom, setTxDateFrom] = useState<Date | undefined>();
+  const [txDateTo, setTxDateTo] = useState<Date | undefined>();
 
   // Check admin role
   useEffect(() => {
@@ -162,6 +173,36 @@ const AdminDashboard: React.FC = () => {
     (u.full_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     (u.phone || '').includes(searchQuery)
   );
+
+  const txTypes = Array.from(new Set(transactions.map(t => t.type)));
+  const filteredTransactions = transactions.filter(tx => {
+    if (txStatus !== 'all') {
+      const norm = tx.status === 'completed' ? 'success' : tx.status;
+      if (norm !== txStatus) return false;
+    }
+    if (txType !== 'all' && tx.type !== txType) return false;
+    if (txSearch) {
+      const q = txSearch.toLowerCase();
+      const phone = String(tx.metadata?.phone || '').toLowerCase();
+      const ref = (tx.reference || '').toLowerCase();
+      if (
+        !(tx.user_name || '').toLowerCase().includes(q) &&
+        !phone.includes(q) &&
+        !ref.includes(q)
+      ) return false;
+    }
+    if (txDateFrom && new Date(tx.created_at) < txDateFrom) return false;
+    if (txDateTo) {
+      const end = new Date(txDateTo);
+      end.setHours(23, 59, 59, 999);
+      if (new Date(tx.created_at) > end) return false;
+    }
+    return true;
+  });
+  const hasFilters = !!(txSearch || txStatus !== 'all' || txType !== 'all' || txDateFrom || txDateTo);
+  const clearFilters = () => {
+    setTxSearch(''); setTxStatus('all'); setTxType('all'); setTxDateFrom(undefined); setTxDateTo(undefined);
+  };
 
   const statusColor = (s: string) => {
     if (s === 'completed' || s === 'success') return 'bg-emerald-100 text-emerald-700';
@@ -298,7 +339,72 @@ const AdminDashboard: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="transactions" className="space-y-3 mt-3">
-            {transactions.map(tx => (
+            {/* Filters */}
+            <div className="space-y-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search user, phone, reference..."
+                  value={txSearch}
+                  onChange={e => setTxSearch(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Select value={txStatus} onValueChange={setTxStatus}>
+                  <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All statuses</SelectItem>
+                    <SelectItem value="success">Success</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="failed">Failed</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={txType} onValueChange={setTxType}>
+                  <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Type" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All types</SelectItem>
+                    {txTypes.map(t => (
+                      <SelectItem key={t} value={t} className="capitalize">{t.replace('_', ' ')}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className={cn("h-9 text-xs justify-start font-normal", !txDateFrom && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-3 w-3" />
+                      {txDateFrom ? format(txDateFrom, 'MMM d, yyyy') : 'From date'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={txDateFrom} onSelect={setTxDateFrom} initialFocus className="p-3 pointer-events-auto" />
+                  </PopoverContent>
+                </Popover>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className={cn("h-9 text-xs justify-start font-normal", !txDateTo && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-3 w-3" />
+                      {txDateTo ? format(txDateTo, 'MMM d, yyyy') : 'To date'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={txDateTo} onSelect={setTxDateTo} initialFocus className="p-3 pointer-events-auto" />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>{filteredTransactions.length} of {transactions.length}</span>
+                {hasFilters && (
+                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={clearFilters}>
+                    <X className="h-3 w-3 mr-1" /> Clear
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {filteredTransactions.map(tx => (
               <Card key={tx.id} className="border-0 bg-card/80">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
@@ -347,8 +453,10 @@ const AdminDashboard: React.FC = () => {
                 </CardContent>
               </Card>
             ))}
-            {transactions.length === 0 && (
-              <p className="text-center text-muted-foreground text-sm py-8">No transactions yet</p>
+            {filteredTransactions.length === 0 && (
+              <p className="text-center text-muted-foreground text-sm py-8">
+                {hasFilters ? 'No transactions match filters' : 'No transactions yet'}
+              </p>
             )}
           </TabsContent>
         </Tabs>
