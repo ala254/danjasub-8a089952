@@ -20,6 +20,8 @@ export type Database = {
           id: string
           is_active: boolean
           markup_percent: number
+          markup_percent_inkotasub: number
+          markup_percent_smeplug: number
           network: string
           updated_at: string
         }
@@ -28,6 +30,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           markup_percent?: number
+          markup_percent_inkotasub?: number
+          markup_percent_smeplug?: number
           network: string
           updated_at?: string
         }
@@ -36,6 +40,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           markup_percent?: number
+          markup_percent_inkotasub?: number
+          markup_percent_smeplug?: number
           network?: string
           updated_at?: string
         }
@@ -77,8 +83,11 @@ export type Database = {
       data_plan_pricing: {
         Row: {
           cost_price: number
+          cost_price_inkotasub: number
+          cost_price_smeplug: number
           created_at: string
           id: string
+          inkotasub_plan_id: string | null
           is_active: boolean
           network: string
           plan_id: string
@@ -88,8 +97,11 @@ export type Database = {
         }
         Insert: {
           cost_price?: number
+          cost_price_inkotasub?: number
+          cost_price_smeplug?: number
           created_at?: string
           id?: string
+          inkotasub_plan_id?: string | null
           is_active?: boolean
           network: string
           plan_id: string
@@ -99,8 +111,11 @@ export type Database = {
         }
         Update: {
           cost_price?: number
+          cost_price_inkotasub?: number
+          cost_price_smeplug?: number
           created_at?: string
           id?: string
+          inkotasub_plan_id?: string | null
           is_active?: boolean
           network?: string
           plan_id?: string
@@ -137,6 +152,33 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      provider_routing: {
+        Row: {
+          created_at: string
+          id: string
+          network: string
+          provider: string
+          service_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          network: string
+          provider?: string
+          service_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          network?: string
+          provider?: string
+          service_type?: string
+          updated_at?: string
         }
         Relationships: []
       }
