@@ -18,6 +18,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { AdminPricingTab } from '@/components/admin/AdminPricingTab';
 import { AdminSettingsTab } from '@/components/admin/AdminSettingsTab';
+import { AdminRoutingTab } from '@/components/admin/AdminRoutingTab';
 import { retryTransaction } from '@/lib/api';
 
 interface AdminUser {
@@ -313,10 +314,11 @@ const AdminDashboard: React.FC = () => {
         </div>
 
         <Tabs defaultValue="users">
-          <TabsList className="w-full grid grid-cols-4">
+          <TabsList className="w-full grid grid-cols-5">
             <TabsTrigger value="users" className="text-xs">Users</TabsTrigger>
             <TabsTrigger value="transactions" className="text-xs">Txns</TabsTrigger>
             <TabsTrigger value="pricing" className="text-xs">Pricing</TabsTrigger>
+            <TabsTrigger value="routing" className="text-xs">Routing</TabsTrigger>
             <TabsTrigger value="settings" className="text-xs">Settings</TabsTrigger>
           </TabsList>
 
@@ -385,6 +387,10 @@ const AdminDashboard: React.FC = () => {
 
           <TabsContent value="pricing" className="mt-3">
             <AdminPricingTab />
+          </TabsContent>
+
+          <TabsContent value="routing" className="mt-3">
+            <AdminRoutingTab />
           </TabsContent>
 
           <TabsContent value="settings" className="mt-3">
