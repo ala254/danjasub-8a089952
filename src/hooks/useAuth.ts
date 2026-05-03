@@ -8,13 +8,13 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -23,25 +23,40 @@ export const useAuth = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string, phone: string) => {
-    const { data, error } = await supabase.auth.signUp({
+  /**
+   * Send a 6-digit OTP to the user's email.
+   * `shouldCreateUser` controls whether new accounts are created.
+   */
+  const sendEmailOtp = async (
+    email: string,
+    opts?: { fullName?: string; phone?: string; shouldCreateUser?: boolean },
+  ) => {
+    const { error } = await supabase.auth.signInWithOtp({
       email,
-      password,
       options: {
-        data: { full_name: fullName, phone },
+        shouldCreateUser: opts?.shouldCreateUser ?? false,
+        data: opts?.fullName || opts?.phone
+          ? { full_name: opts?.fullName, phone: opts?.phone }
+          : undefined,
       },
+    });
+    return { error };
+  };
+
+  /** Verify the 6-digit OTP — establishes a session. */
+  const verifyEmailOtp = async (email: string, token: string) => {
+    const { data, error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: 'email',
     });
     return { data, error };
   };
 
-  const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    return { data, error };
-  };
-
   const signOut = async () => {
+    sessionStorage.removeItem('passcode_unlocked');
     await supabase.auth.signOut();
   };
 
-  return { user, session, loading, signUp, signIn, signOut };
+  return { user, session, loading, sendEmailOtp, verifyEmailOtp, signOut };
 };

@@ -21,6 +21,7 @@ import NotificationSettings from "./pages/NotificationSettings";
 import HelpSupport from "./pages/HelpSupport";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
+import { PasscodeGate } from "@/components/auth/PasscodeGate";
 
 const queryClient = new QueryClient();
 
@@ -32,7 +33,7 @@ const AppContent = () => {
   const showNav = pagesWithNav.some(path => location.pathname.startsWith(path));
 
   return (
-    <>
+    <PasscodeGate>
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/login" element={<Login />} />
@@ -59,7 +60,7 @@ const AppContent = () => {
           onNavigate={(path) => navigate(path)}
         />
       )}
-    </>
+    </PasscodeGate>
   );
 };
 
