@@ -221,6 +221,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_passcodes: {
+        Row: {
+          created_at: string
+          failed_attempts: number
+          locked_until: string | null
+          passcode_hash: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          failed_attempts?: number
+          locked_until?: string | null
+          passcode_hash: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          failed_attempts?: number
+          locked_until?: string | null
+          passcode_hash?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -307,6 +334,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      has_passcode: { Args: never; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -315,6 +343,8 @@ export type Database = {
         Returns: boolean
       }
       is_user_suspended: { Args: { _user_id: string }; Returns: boolean }
+      set_user_passcode: { Args: { _passcode: string }; Returns: undefined }
+      verify_user_passcode: { Args: { _passcode: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
