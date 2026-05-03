@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Lock, KeyRound, Loader2, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, KeyRound, ShieldCheck, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { Input } from '@/components/ui/input';
@@ -7,54 +7,76 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { PinKeypad } from '@/components/auth/PinKeypad';
+
+type Tab = 'passcode' | 'pin';
+type PcStage = 'verify' | 'new' | 'confirm';
 
 const Security: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [tab, setTab] = useState<'password' | 'pin'>('password');
+  const [tab, setTab] = useState<Tab>('passcode');
 
-  // Password state
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [savingPassword, setSavingPassword] = useState(false);
+  // Login passcode state
+  const [pcStage, setPcStage] = useState<PcStage>('verify');
+  const [currentPc, setCurrentPc] = useState('');
+  const [newPc, setNewPc] = useState('');
+  const [confirmPc, setConfirmPc] = useState('');
+  const [pcError, setPcError] = useState<string | null>(null);
+  const [pcSaving, setPcSaving] = useState(false);
 
-  // PIN state
+  // Wallet/transaction PIN
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [savingPin, setSavingPin] = useState(false);
 
-  const handleChangePassword = async () => {
-    if (newPassword.length < 6) { toast.error('Password must be at least 6 characters'); return; }
-    if (newPassword !== confirmPassword) { toast.error('Passwords do not match'); return; }
-    setSavingPassword(true);
-    try {
-      const { error } = await supabase.auth.updateUser({ password: newPassword });
-      if (error) throw error;
-      toast.success('Password updated successfully');
-      setNewPassword('');
-      setConfirmPassword('');
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to update password');
-    } finally {
-      setSavingPassword(false);
-    }
+  // ---- Passcode change ----
+  const handleVerifyCurrent = async (code: string) => {
+    setPcSaving(true);
+    setPcError(null);
+    const { data, error } = await supabase.rpc('verify_user_passcode', { _passcode: code });
+    setPcSaving(false);
+    if (error) { setPcError(error.message); setCurrentPc(''); return; }
+    const r = data as { ok: boolean; reason?: string; attempts_left?: number };
+    if (r.ok) { setPcStage('new'); setCurrentPc(''); return; }
+    if (r.reason === 'locked') { setPcError('Too many attempts. Locked 15 min.'); setCurrentPc(''); return; }
+    setPcError(`Wrong passcode. ${r.attempts_left ?? 0} tries left`);
+    setCurrentPc('');
   };
 
+  const handleNewEntered = (val: string) => {
+    setNewPc(val);
+    setPcStage('confirm');
+    setConfirmPc('');
+    setPcError(null);
+  };
+
+  const handleConfirmEntered = async (val: string) => {
+    if (val !== newPc) {
+      setPcError('Passcodes do not match');
+      setConfirmPc('');
+      return;
+    }
+    setPcSaving(true);
+    const { error } = await supabase.rpc('set_user_passcode', { _passcode: val });
+    setPcSaving(false);
+    if (error) { setPcError(error.message); return; }
+    toast.success('Passcode updated');
+    setPcStage('verify');
+    setNewPc(''); setConfirmPc('');
+  };
+
+  // ---- Wallet PIN ----
   const handleSetPin = async () => {
     if (pin.length !== 4 || !/^\d{4}$/.test(pin)) { toast.error('PIN must be exactly 4 digits'); return; }
     if (pin !== confirmPin) { toast.error('PINs do not match'); return; }
     if (!user) return;
     setSavingPin(true);
     try {
-      const { error } = await supabase
-        .from('wallets')
-        .update({ pin_hash: pin })
-        .eq('user_id', user.id);
+      const { error } = await supabase.from('wallets').update({ pin_hash: pin }).eq('user_id', user.id);
       if (error) throw error;
       toast.success('Transaction PIN updated');
-      setPin('');
-      setConfirmPin('');
+      setPin(''); setConfirmPin('');
     } catch (err: any) {
       toast.error(err.message || 'Failed to update PIN');
     } finally {
@@ -75,33 +97,46 @@ const Security: React.FC = () => {
 
       <div className="px-4 py-6">
         <div className="flex gap-2 mb-6">
-          <button onClick={() => setTab('password')} className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors ${tab === 'password' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
-            <Lock className="w-4 h-4 inline mr-1.5" />Password
+          <button onClick={() => setTab('passcode')} className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors ${tab === 'passcode' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+            <ShieldCheck className="w-4 h-4 inline mr-1.5" />Login Passcode
           </button>
           <button onClick={() => setTab('pin')} className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors ${tab === 'pin' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
             <KeyRound className="w-4 h-4 inline mr-1.5" />Transaction PIN
           </button>
         </div>
 
-        {tab === 'password' && (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">New Password</label>
-              <div className="relative">
-                <Input type={showPassword ? 'text' : 'password'} value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Min 6 characters" />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Confirm Password</label>
-              <Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Re-enter password" />
-            </div>
-            <Button onClick={handleChangePassword} disabled={savingPassword} className="w-full">
-              {savingPassword ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              Update Password
-            </Button>
+        {tab === 'passcode' && (
+          <div className="bg-card rounded-2xl p-5 shadow-card">
+            {pcStage === 'verify' && (
+              <PinKeypad
+                value={currentPc}
+                onChange={(v) => { setPcError(null); setCurrentPc(v); }}
+                onComplete={handleVerifyCurrent}
+                label="Enter current passcode"
+                error={pcError}
+                disabled={pcSaving}
+              />
+            )}
+            {pcStage === 'new' && (
+              <PinKeypad
+                value={newPc}
+                onChange={(v) => { setPcError(null); setNewPc(v); }}
+                onComplete={handleNewEntered}
+                label="Enter new 6-digit passcode"
+                error={pcError}
+                disabled={pcSaving}
+              />
+            )}
+            {pcStage === 'confirm' && (
+              <PinKeypad
+                value={confirmPc}
+                onChange={(v) => { setPcError(null); setConfirmPc(v); }}
+                onComplete={handleConfirmEntered}
+                label="Confirm new passcode"
+                error={pcError}
+                disabled={pcSaving}
+              />
+            )}
           </div>
         )}
 
