@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronRight, Smartphone, Shield, Zap, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import danjasubLogo from '@/assets/danjasub-logo.jpg';
 
 interface OnboardingSlide {
   icon: React.ElementType;
