@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronRight, Smartphone, Shield, Zap, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import danjasubLogo from '@/assets/danjasub-logo.jpg';
 
 interface OnboardingSlide {
   icon: React.ElementType;
@@ -72,14 +73,14 @@ const Onboarding: React.FC = () => {
         <div className="absolute bottom-32 -right-10 w-56 h-56 bg-primary-foreground/5 rounded-full blur-3xl" />
         
         <div className="animate-scale-in text-center z-10">
-          <div className="w-24 h-24 rounded-3xl bg-primary-foreground/20 flex items-center justify-center mx-auto mb-6 backdrop-blur-sm">
-            <span className="text-4xl font-display font-bold text-primary-foreground">D</span>
+          <div className="w-28 h-28 rounded-3xl bg-primary-foreground flex items-center justify-center mx-auto mb-6 shadow-elevated overflow-hidden p-2">
+            <img src={danjasubLogo} alt="Danjasub" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-4xl font-display font-bold text-primary-foreground mb-2">
             Danjasub
           </h1>
-          <p className="text-primary-foreground/70 text-sm font-medium tracking-wider uppercase">
-            Fast, Reliable VTU Services
+          <p className="text-primary-foreground/80 text-sm font-medium tracking-wider uppercase">
+            Fast. Reliable. Affordable.
           </p>
         </div>
         
