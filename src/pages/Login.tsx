@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, ArrowLeft, Mail, Loader2 } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Mail, Loader2, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -8,6 +8,8 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { PinKeypad } from '@/components/auth/PinKeypad';
+import { isValidEmail, isValidNgPhone, isValidFullName, normalizeNgPhone } from '@/lib/validation';
+import logo from '@/assets/danjasub-logo.jpg';
 
 type AuthMode = 'login' | 'register';
 type Step = 'identity' | 'otp' | 'set-passcode' | 'enter-passcode';
@@ -24,37 +26,61 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [referral, setReferral] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [rememberEmail, setRememberEmail] = useState(true);
   const [otp, setOtp] = useState('');
   const [passcode, setPasscode] = useState('');
   const [confirmPasscode, setConfirmPasscode] = useState('');
   const [stage, setStage] = useState<'enter' | 'confirm'>('enter');
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
-  const validEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
+  // Pre-fill remembered email on mount
+  React.useEffect(() => {
+    const saved = localStorage.getItem('danjasub_email');
+    if (saved) setEmail(saved);
+  }, []);
+
+  const validateIdentity = (): boolean => {
+    const errs: Record<string, string> = {};
+    if (!isValidEmail(email)) errs.email = 'Enter a valid email address';
+    if (mode === 'register') {
+      if (!isValidFullName(name)) errs.name = 'Enter your full name (first and last)';
+      if (!isValidNgPhone(phone)) errs.phone = 'Enter a valid Nigerian number (e.g. 08012345678)';
+      if (!acceptedTerms) errs.terms = 'Please accept the Terms to continue';
+    }
+    setFieldErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
 
   // ---- Step 1: send OTP -----------------------------------------------------
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validEmail(email)) { toast.error('Please enter a valid email'); return; }
-    if (mode === 'register' && !name.trim()) { toast.error('Please enter your name'); return; }
+    if (!validateIdentity()) return;
 
     setLoading(true);
     const { error } = await sendEmailOtp(email.trim().toLowerCase(), {
       fullName: name.trim() || undefined,
-      phone: phone.trim() || undefined,
+      phone: phone ? normalizeNgPhone(phone) : undefined,
       shouldCreateUser: mode === 'register',
     });
     setLoading(false);
 
     if (error) {
-      if (mode === 'login' && error.message.toLowerCase().includes('signups not allowed')) {
-        toast.error('No account found for this email. Sign up first.');
+      const msg = error.message.toLowerCase();
+      if (mode === 'login' && msg.includes('signups not allowed')) {
+        toast.error('No account found. Switch to Sign Up to create one.');
+      } else if (msg.includes('rate')) {
+        toast.error('Too many requests. Please wait a minute and try again.');
       } else {
         toast.error(error.message);
       }
       return;
     }
+
+    if (rememberEmail) localStorage.setItem('danjasub_email', email.trim().toLowerCase());
     setStep('otp');
     setOtp('');
     toast.success('We sent a 6-digit code to your email');
@@ -72,7 +98,6 @@ const Login: React.FC = () => {
       return;
     }
 
-    // Has the user already set a passcode?
     const { data: hasPc } = await supabase.rpc('has_passcode');
     setLoading(false);
 
@@ -94,9 +119,8 @@ const Login: React.FC = () => {
       setConfirmPasscode('');
       return;
     }
-    // confirm stage
     if (val !== passcode) {
-      setError('Passcodes do not match');
+      setError('Passcodes do not match. Try again.');
       setConfirmPasscode('');
       return;
     }
@@ -108,10 +132,7 @@ const Login: React.FC = () => {
     setError(null);
     const { error } = await supabase.rpc('set_user_passcode', { _passcode: code });
     setLoading(false);
-    if (error) {
-      setError(error.message);
-      return;
-    }
+    if (error) { setError(error.message); return; }
     sessionStorage.setItem('passcode_unlocked', '1');
     toast.success(mode === 'register' ? 'Account created!' : 'Passcode set');
     navigate('/dashboard');
@@ -157,90 +178,151 @@ const Login: React.FC = () => {
   };
 
   const headerSubtitle = () => {
-    if (step === 'identity') return mode === 'login' ? 'Sign in with email + passcode' : 'Join thousands on Danjasub';
-    if (step === 'otp') return `We sent a 6-digit code to ${email}`;
+    if (step === 'identity') return mode === 'login' ? 'Sign in to your Danjasub wallet' : 'Join thousands on Danjasub';
+    if (step === 'otp') return `Code sent to ${email}`;
     if (step === 'set-passcode') return stage === 'enter'
       ? 'Choose a 6-digit passcode for fast login'
       : 'Re-enter to confirm';
-    return `Sign in as ${email}`;
+    return `Signing in as ${email}`;
   };
 
   return (
     <div className="min-h-screen bg-background flex flex-col max-w-md mx-auto">
-      <header className="gradient-hero px-6 pt-12 pb-16 text-primary-foreground safe-area-top rounded-b-[2.5rem] relative overflow-hidden">
-        <div className="absolute top-8 -right-8 w-32 h-32 bg-primary-foreground/5 rounded-full blur-xl" />
-        <div className="absolute bottom-4 -left-6 w-24 h-24 bg-primary-foreground/5 rounded-full blur-xl" />
+      <header className="gradient-hero px-6 pt-12 pb-20 text-primary-foreground safe-area-top rounded-b-[2.5rem] relative overflow-hidden">
+        <div className="absolute top-8 -right-10 w-40 h-40 bg-primary-foreground/10 rounded-full blur-2xl" />
+        <div className="absolute -bottom-4 -left-10 w-32 h-32 bg-primary-foreground/10 rounded-full blur-2xl" />
         <div className="relative z-10">
-          {step !== 'identity' && (
-            <button onClick={goBack} className="mb-3 inline-flex items-center text-primary-foreground/80 hover:text-primary-foreground text-sm">
+          {step !== 'identity' ? (
+            <button onClick={goBack} className="mb-4 inline-flex items-center text-primary-foreground/80 hover:text-primary-foreground text-sm transition-colors">
               <ArrowLeft className="w-4 h-4 mr-1" /> Back
             </button>
+          ) : (
+            <div className="flex items-center gap-3 mb-5 animate-in fade-in slide-in-from-top-2 duration-500">
+              <div className="w-12 h-12 rounded-2xl bg-primary-foreground p-1.5 shadow-elevated overflow-hidden">
+                <img src={logo} alt="Danjasub" className="w-full h-full object-cover rounded-xl" />
+              </div>
+              <div>
+                <p className="text-sm font-display font-bold tracking-wider">DANJASUB</p>
+                <p className="text-[11px] text-primary-foreground/70">Fast. Reliable. Affordable.</p>
+              </div>
+            </div>
           )}
-          <p className="text-sm font-medium text-primary-foreground/60 mb-1 font-display tracking-wider uppercase">Danjasub</p>
           <h1 className="text-3xl font-display font-bold mb-2">{headerTitle()}</h1>
-          <p className="text-primary-foreground/70 text-sm">{headerSubtitle()}</p>
+          <p className="text-primary-foreground/80 text-sm">{headerSubtitle()}</p>
         </div>
       </header>
 
-      <main className="flex-1 px-6 -mt-6">
-        <div className="bg-card rounded-2xl shadow-elevated p-6">
-          {/* IDENTITY */}
+      <main className="flex-1 px-5 -mt-10 pb-8">
+        <div className="bg-card rounded-3xl shadow-elevated p-6 animate-in fade-in slide-in-from-bottom-3 duration-300">
           {step === 'identity' && (
             <>
-              <div className="flex bg-muted rounded-xl p-1 mb-6">
-                <button onClick={() => setMode('login')} className={cn('flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all', mode === 'login' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground')}>Sign In</button>
-                <button onClick={() => setMode('register')} className={cn('flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all', mode === 'register' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground')}>Sign Up</button>
+              <div className="flex bg-muted rounded-2xl p-1 mb-6">
+                <button
+                  onClick={() => { setMode('login'); setFieldErrors({}); }}
+                  className={cn('flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all', mode === 'login' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground')}
+                >Sign In</button>
+                <button
+                  onClick={() => { setMode('register'); setFieldErrors({}); }}
+                  className={cn('flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all', mode === 'register' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground')}
+                >Sign Up</button>
               </div>
 
-              <form onSubmit={handleSendOtp} className="space-y-4">
+              <form onSubmit={handleSendOtp} className="space-y-4" noValidate>
                 {mode === 'register' && (
                   <>
-                    <div className="space-y-1.5">
-                      <label className="text-sm font-medium text-muted-foreground">Full Name</label>
-                      <Input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="John Doe" className="h-13" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-sm font-medium text-muted-foreground">Phone Number</label>
-                      <Input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="08012345678" className="h-13" />
-                    </div>
+                    <Field label="Full Name" error={fieldErrors.name}>
+                      <Input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="John Doe" className="h-12 rounded-xl" />
+                    </Field>
+                    <Field label="Phone Number" error={fieldErrors.phone} hint="Nigerian mobile e.g. 08012345678">
+                      <Input
+                        type="tel"
+                        inputMode="numeric"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value.replace(/[^\d+]/g, '').slice(0, 14))}
+                        placeholder="08012345678"
+                        className="h-12 rounded-xl"
+                      />
+                    </Field>
                   </>
                 )}
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-muted-foreground">Email Address</label>
-                  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="h-13" />
-                </div>
+
+                <Field label="Email Address" error={fieldErrors.email}>
+                  <Input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="h-12 rounded-xl" />
+                </Field>
+
+                {mode === 'register' && (
+                  <Field label="Referral Code (optional)">
+                    <Input type="text" value={referral} onChange={(e) => setReferral(e.target.value.toUpperCase().slice(0, 12))} placeholder="DANJA123" className="h-12 rounded-xl" />
+                  </Field>
+                )}
+
+                {mode === 'login' ? (
+                  <label className="flex items-center gap-2 text-sm text-muted-foreground select-none">
+                    <input
+                      type="checkbox"
+                      checked={rememberEmail}
+                      onChange={(e) => setRememberEmail(e.target.checked)}
+                      className="w-4 h-4 rounded accent-primary"
+                    />
+                    Remember my email
+                  </label>
+                ) : (
+                  <div className="space-y-1">
+                    <label className="flex items-start gap-2 text-sm text-muted-foreground select-none">
+                      <input
+                        type="checkbox"
+                        checked={acceptedTerms}
+                        onChange={(e) => setAcceptedTerms(e.target.checked)}
+                        className="w-4 h-4 mt-0.5 rounded accent-primary"
+                      />
+                      <span>
+                        I agree to the{' '}
+                        <span className="text-primary font-medium">Terms</span> &{' '}
+                        <span className="text-primary font-medium">Privacy Policy</span>
+                      </span>
+                    </label>
+                    {fieldErrors.terms && <p className="text-xs text-destructive font-medium pl-6">{fieldErrors.terms}</p>}
+                  </div>
+                )}
 
                 <Button type="submit" disabled={loading} className="w-full" size="xl" variant="gradient">
-                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Continue <ArrowRight className="w-5 h-5 ml-2" /></>}
+                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>{mode === 'login' ? 'Continue' : 'Create Account'} <ArrowRight className="w-5 h-5 ml-2" /></>}
                 </Button>
+
+                <div className="flex items-center justify-center gap-2 pt-2 text-xs text-muted-foreground">
+                  <ShieldCheck className="w-4 h-4 text-primary" />
+                  Secured with email OTP & 6-digit passcode
+                </div>
               </form>
             </>
           )}
 
-          {/* OTP */}
           {step === 'otp' && (
             <div className="space-y-6">
               <div className="flex justify-center">
-                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
-                  <Mail className="w-7 h-7 text-primary" />
+                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+                  <Mail className="w-8 h-8 text-primary" />
                 </div>
               </div>
-              <Input
-                type="text"
-                inputMode="numeric"
-                maxLength={6}
-                value={otp}
-                onChange={(e) => {
-                  const v = e.target.value.replace(/\D/g, '').slice(0, 6);
-                  setOtp(v);
-                  setError(null);
-                  if (v.length === 6) handleVerifyOtp(v);
-                }}
-                placeholder="••••••"
-                className="h-14 text-center text-2xl font-display tracking-[0.5em]"
-                autoFocus
-              />
-              {error && <p className="text-xs text-destructive font-medium text-center">{error}</p>}
+              <div>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  value={otp}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/\D/g, '').slice(0, 6);
+                    setOtp(v);
+                    setError(null);
+                    if (v.length === 6) handleVerifyOtp(v);
+                  }}
+                  placeholder="••••••"
+                  className="h-14 rounded-xl text-center text-2xl font-display tracking-[0.5em]"
+                  autoFocus
+                />
+                {error && <p className="text-xs text-destructive font-medium text-center mt-2">{error}</p>}
+              </div>
 
               <Button
                 type="button"
@@ -250,21 +332,20 @@ const Login: React.FC = () => {
                 size="xl"
                 variant="gradient"
               >
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Verify'}
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle2 className="w-5 h-5 mr-2" /> Verify</>}
               </Button>
 
               <button
                 type="button"
                 onClick={(e) => handleSendOtp(e as unknown as React.FormEvent)}
                 disabled={loading}
-                className="w-full text-sm text-primary font-medium"
+                className="w-full text-sm text-primary font-semibold hover:underline disabled:opacity-50"
               >
                 Resend code
               </button>
             </div>
           )}
 
-          {/* SET PASSCODE */}
           {step === 'set-passcode' && (
             <PinKeypad
               value={stage === 'enter' ? passcode : confirmPasscode}
@@ -281,7 +362,6 @@ const Login: React.FC = () => {
             />
           )}
 
-          {/* ENTER PASSCODE */}
           {step === 'enter-passcode' && (
             <div className="space-y-4">
               <PinKeypad
@@ -296,7 +376,7 @@ const Login: React.FC = () => {
               <button
                 type="button"
                 onClick={() => { setStep('otp'); setOtp(''); sendEmailOtp(email.trim().toLowerCase()); toast.success('New code sent'); }}
-                className="w-full text-sm text-primary font-medium pt-2"
+                className="w-full text-sm text-primary font-semibold hover:underline pt-2"
               >
                 Forgot passcode? Verify by email
               </button>
@@ -304,14 +384,32 @@ const Login: React.FC = () => {
           )}
         </div>
 
-        <p className="text-center text-xs text-muted-foreground mt-6 px-4">
-          By continuing, you agree to our{' '}
-          <button className="text-primary font-medium">Terms</button> and{' '}
-          <button className="text-primary font-medium">Privacy Policy</button>
-        </p>
+        {step === 'identity' && (
+          <p className="text-center text-xs text-muted-foreground mt-5 px-4">
+            By continuing you confirm you are 18+ and a Nigerian resident.
+          </p>
+        )}
       </main>
     </div>
   );
 };
+
+/** Inline labelled field with error/hint slot. */
+const Field: React.FC<{
+  label: string;
+  error?: string;
+  hint?: string;
+  children: React.ReactNode;
+}> = ({ label, error, hint, children }) => (
+  <div className="space-y-1.5">
+    <label className="text-sm font-medium text-foreground/80">{label}</label>
+    {children}
+    {error ? (
+      <p className="text-xs text-destructive font-medium">{error}</p>
+    ) : hint ? (
+      <p className="text-xs text-muted-foreground">{hint}</p>
+    ) : null}
+  </div>
+);
 
 export default Login;
