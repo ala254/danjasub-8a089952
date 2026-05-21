@@ -368,12 +368,13 @@ const Login: React.FC = () => {
 
               <button
                 type="button"
-                onClick={(e) => handleSendOtp(e as unknown as React.FormEvent)}
-                disabled={loading}
-                className="w-full text-sm text-primary font-semibold hover:underline disabled:opacity-50"
+                onClick={handleResend}
+                disabled={loading || resendIn > 0}
+                className="w-full text-sm text-primary font-semibold hover:underline disabled:opacity-50 disabled:no-underline"
               >
-                Resend code
+                {resendIn > 0 ? `Resend code in ${resendIn}s` : 'Resend code'}
               </button>
+              <p className="text-center text-[11px] text-muted-foreground">Codes expire in 10 minutes. Check spam if not received.</p>
             </div>
           )}
 
