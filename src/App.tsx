@@ -51,6 +51,7 @@ const AppContent = () => {
         <Route path="/profile/payments" element={<PaymentMethods />} />
         <Route path="/profile/notifications" element={<NotificationSettings />} />
         <Route path="/help" element={<HelpSupport />} />
+        <Route path="/about" element={<About />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
