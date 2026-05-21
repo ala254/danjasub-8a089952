@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { ArrowLeft, User, Shield, CreditCard, Bell, HelpCircle, LogOut, ChevronRight, Phone, Mail, ShieldCheck, Camera, Loader2, Info, Code2 } from 'lucide-react';
+import { ArrowLeft, User, Shield, CreditCard, Bell, HelpCircle, LogOut, ChevronRight, Phone, Mail, ShieldCheck, Camera, Loader2, Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { DeveloperInfo } from '@/components/developer/DeveloperInfo';
 
 interface MenuItem {
   icon: React.ElementType;
