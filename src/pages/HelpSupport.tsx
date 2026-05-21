@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, MessageCircle, Mail, Send, Loader2, Code2, ExternalLink } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Mail, Send, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { Input } from '@/components/ui/input';
