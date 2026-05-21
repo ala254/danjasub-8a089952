@@ -36,6 +36,14 @@ const Login: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [resendIn, setResendIn] = useState(0);
+
+  React.useEffect(() => {
+    if (resendIn <= 0) return;
+    const t = setTimeout(() => setResendIn((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendIn]);
+
 
   // Pre-fill remembered email on mount
   React.useEffect(() => {
@@ -56,47 +64,70 @@ const Login: React.FC = () => {
   };
 
   // ---- Step 1: send OTP -----------------------------------------------------
-  const handleSendOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateIdentity()) return;
-
+  const sendOtpRequest = async (isResend = false) => {
     setLoading(true);
-    const { error } = await sendEmailOtp(email.trim().toLowerCase(), {
-      fullName: name.trim() || undefined,
-      phone: phone ? normalizeNgPhone(phone) : undefined,
-      shouldCreateUser: mode === 'register',
+    setError(null);
+    const { error } = await supabase.auth.signInWithOtp({
+      email: email.trim().toLowerCase(),
+      options: {
+        shouldCreateUser: mode === 'register',
+        emailRedirectTo: `${window.location.origin}/dashboard`,
+        data: mode === 'register'
+          ? { full_name: name.trim(), phone: phone ? normalizeNgPhone(phone) : undefined }
+          : undefined,
+      },
     });
     setLoading(false);
 
     if (error) {
       const msg = error.message.toLowerCase();
-      if (mode === 'login' && msg.includes('signups not allowed')) {
+      console.error('[OTP send]', error);
+      if (mode === 'login' && (msg.includes('signups not allowed') || msg.includes('not found'))) {
         toast.error('No account found. Switch to Sign Up to create one.');
-      } else if (msg.includes('rate')) {
-        toast.error('Too many requests. Please wait a minute and try again.');
+      } else if (msg.includes('rate') || msg.includes('too many') || msg.includes('seconds')) {
+        toast.error('Please wait a moment before requesting another code.');
       } else {
         toast.error(error.message);
       }
-      return;
+      return false;
     }
 
     if (rememberEmail) localStorage.setItem('danjasub_email', email.trim().toLowerCase());
-    setStep('otp');
     setOtp('');
-    toast.success('We sent a 6-digit code to your email');
+    setResendIn(30);
+    toast.success(isResend ? 'New code sent to your email' : 'We sent a 6-digit code to your email');
+    return true;
+  };
+
+  const handleSendOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateIdentity()) return;
+    const ok = await sendOtpRequest(false);
+    if (ok) setStep('otp');
+  };
+
+  const handleResend = async () => {
+    if (resendIn > 0 || loading) return;
+    await sendOtpRequest(true);
   };
 
   // ---- Step 2: verify OTP ---------------------------------------------------
   const handleVerifyOtp = async (code: string) => {
+    if (code.length !== 6) return;
     setLoading(true);
     setError(null);
     const { error } = await verifyEmailOtp(email.trim().toLowerCase(), code);
     if (error) {
       setLoading(false);
-      setError('Invalid or expired code');
+      const msg = error.message.toLowerCase();
+      console.error('[OTP verify]', error);
+      if (msg.includes('expired')) setError('Code expired. Tap Resend to get a new one.');
+      else if (msg.includes('invalid')) setError('Incorrect code. Please check and try again.');
+      else setError(error.message);
       setOtp('');
       return;
     }
+
 
     const { data: hasPc } = await supabase.rpc('has_passcode');
     setLoading(false);
@@ -337,12 +368,13 @@ const Login: React.FC = () => {
 
               <button
                 type="button"
-                onClick={(e) => handleSendOtp(e as unknown as React.FormEvent)}
-                disabled={loading}
-                className="w-full text-sm text-primary font-semibold hover:underline disabled:opacity-50"
+                onClick={handleResend}
+                disabled={loading || resendIn > 0}
+                className="w-full text-sm text-primary font-semibold hover:underline disabled:opacity-50 disabled:no-underline"
               >
-                Resend code
+                {resendIn > 0 ? `Resend code in ${resendIn}s` : 'Resend code'}
               </button>
+              <p className="text-center text-[11px] text-muted-foreground">Codes expire in 10 minutes. Check spam if not received.</p>
             </div>
           )}
 
@@ -375,7 +407,7 @@ const Login: React.FC = () => {
               />
               <button
                 type="button"
-                onClick={() => { setStep('otp'); setOtp(''); sendEmailOtp(email.trim().toLowerCase()); toast.success('New code sent'); }}
+                onClick={async () => { setStep('otp'); setOtp(''); await sendOtpRequest(true); }}
                 className="w-full text-sm text-primary font-semibold hover:underline pt-2"
               >
                 Forgot passcode? Verify by email
