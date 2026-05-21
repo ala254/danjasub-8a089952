@@ -23,6 +23,13 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
       )}>
         {children}
       </main>
+
+      {/* App Footer */}
+      <footer className="py-3 px-4 text-center border-t border-border/30">
+        <p className="text-[10px] text-muted-foreground/50">
+          Developed by <span className="font-semibold text-primary/70">Alamin Kabir</span>
+        </p>
+      </footer>
     </div>
   );
 };

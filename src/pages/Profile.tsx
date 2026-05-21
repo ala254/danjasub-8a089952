@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { ArrowLeft, User, Shield, CreditCard, Bell, HelpCircle, LogOut, ChevronRight, Phone, Mail, ShieldCheck, Camera, Loader2 } from 'lucide-react';
+import { ArrowLeft, User, Shield, CreditCard, Bell, HelpCircle, LogOut, ChevronRight, Phone, Mail, ShieldCheck, Camera, Loader2, Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { DeveloperInfo } from '@/components/developer/DeveloperInfo';
 
 interface MenuItem {
   icon: React.ElementType;
@@ -20,6 +21,7 @@ const menuItems: MenuItem[] = [
   { icon: CreditCard, label: 'Payment Methods', description: 'Cards & bank accounts', path: '/profile/payments' },
   { icon: Bell, label: 'Notifications', description: 'Customize alerts', path: '/profile/notifications' },
   { icon: HelpCircle, label: 'Help & Support', description: 'Get help', path: '/help' },
+  { icon: Info, label: 'About Danjasub', description: 'App info & developer', path: '/about' },
 ];
 
 const Profile: React.FC = () => {
@@ -177,6 +179,9 @@ const Profile: React.FC = () => {
           </button>
         )}
 
+        {/* Developer Info */}
+        <DeveloperInfo className="mt-4" compact />
+
         <button
           onClick={handleLogout}
           className="w-full flex items-center gap-3 p-4 mt-4 bg-destructive/8 rounded-2xl hover:bg-destructive/15 transition-colors"
@@ -187,7 +192,8 @@ const Profile: React.FC = () => {
           <span className="font-semibold text-sm text-destructive">Log Out</span>
         </button>
 
-        <p className="text-center text-xs text-muted-foreground mt-8">Danjasub v1.0.0</p>
+        <p className="text-center text-xs text-muted-foreground mt-6">Danjasub v1.0.0</p>
+        <p className="text-center text-[10px] text-muted-foreground/60 mt-1">Developed by Alamin Kabir</p>
       </div>
     </MobileLayout>
   );

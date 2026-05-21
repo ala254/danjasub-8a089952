@@ -19,6 +19,7 @@ import Security from "./pages/Security";
 import PaymentMethods from "./pages/PaymentMethods";
 import NotificationSettings from "./pages/NotificationSettings";
 import HelpSupport from "./pages/HelpSupport";
+import About from "./pages/About";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 import { PasscodeGate } from "@/components/auth/PasscodeGate";
@@ -50,6 +51,7 @@ const AppContent = () => {
         <Route path="/profile/payments" element={<PaymentMethods />} />
         <Route path="/profile/notifications" element={<NotificationSettings />} />
         <Route path="/help" element={<HelpSupport />} />
+        <Route path="/about" element={<About />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

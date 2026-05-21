@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { DeveloperInfo } from '@/components/developer/DeveloperInfo';
 
 const HelpSupport: React.FC = () => {
   const navigate = useNavigate();
@@ -79,6 +80,9 @@ const HelpSupport: React.FC = () => {
             Send Message
           </Button>
         </div>
+
+        {/* Developer Contact */}
+        <DeveloperInfo />
       </div>
     </MobileLayout>
   );
