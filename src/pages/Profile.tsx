@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { ArrowLeft, User, Shield, CreditCard, Bell, HelpCircle, LogOut, ChevronRight, Phone, Mail, ShieldCheck, Camera, Loader2 } from 'lucide-react';
+import { ArrowLeft, User, Shield, CreditCard, Bell, HelpCircle, LogOut, ChevronRight, Phone, Mail, ShieldCheck, Camera, Loader2, Info, Code2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { cn } from '@/lib/utils';
@@ -20,6 +20,7 @@ const menuItems: MenuItem[] = [
   { icon: CreditCard, label: 'Payment Methods', description: 'Cards & bank accounts', path: '/profile/payments' },
   { icon: Bell, label: 'Notifications', description: 'Customize alerts', path: '/profile/notifications' },
   { icon: HelpCircle, label: 'Help & Support', description: 'Get help', path: '/help' },
+  { icon: Info, label: 'About Danjasub', description: 'App info & developer', path: '/about' },
 ];
 
 const Profile: React.FC = () => {
