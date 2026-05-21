@@ -80,6 +80,9 @@ const HelpSupport: React.FC = () => {
             Send Message
           </Button>
         </div>
+
+        {/* Developer Contact */}
+        <DeveloperInfo />
       </div>
     </MobileLayout>
   );
