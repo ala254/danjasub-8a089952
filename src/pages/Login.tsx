@@ -407,7 +407,7 @@ const Login: React.FC = () => {
               />
               <button
                 type="button"
-                onClick={() => { setStep('otp'); setOtp(''); sendEmailOtp(email.trim().toLowerCase()); toast.success('New code sent'); }}
+                onClick={async () => { setStep('otp'); setOtp(''); await sendOtpRequest(true); }}
                 className="w-full text-sm text-primary font-semibold hover:underline pt-2"
               >
                 Forgot passcode? Verify by email
