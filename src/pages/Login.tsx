@@ -113,15 +113,21 @@ const Login: React.FC = () => {
 
   // ---- Step 2: verify OTP ---------------------------------------------------
   const handleVerifyOtp = async (code: string) => {
+    if (code.length !== 6) return;
     setLoading(true);
     setError(null);
     const { error } = await verifyEmailOtp(email.trim().toLowerCase(), code);
     if (error) {
       setLoading(false);
-      setError('Invalid or expired code');
+      const msg = error.message.toLowerCase();
+      console.error('[OTP verify]', error);
+      if (msg.includes('expired')) setError('Code expired. Tap Resend to get a new one.');
+      else if (msg.includes('invalid')) setError('Incorrect code. Please check and try again.');
+      else setError(error.message);
       setOtp('');
       return;
     }
+
 
     const { data: hasPc } = await supabase.rpc('has_passcode');
     setLoading(false);
