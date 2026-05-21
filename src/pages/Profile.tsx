@@ -179,6 +179,9 @@ const Profile: React.FC = () => {
           </button>
         )}
 
+        {/* Developer Info */}
+        <DeveloperInfo className="mt-4" compact />
+
         <button
           onClick={handleLogout}
           className="w-full flex items-center gap-3 p-4 mt-4 bg-destructive/8 rounded-2xl hover:bg-destructive/15 transition-colors"
@@ -189,7 +192,8 @@ const Profile: React.FC = () => {
           <span className="font-semibold text-sm text-destructive">Log Out</span>
         </button>
 
-        <p className="text-center text-xs text-muted-foreground mt-8">Danjasub v1.0.0</p>
+        <p className="text-center text-xs text-muted-foreground mt-6">Danjasub v1.0.0</p>
+        <p className="text-center text-[10px] text-muted-foreground/60 mt-1">Developed by Alamin Kabir</p>
       </div>
     </MobileLayout>
   );
