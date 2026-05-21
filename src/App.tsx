@@ -19,6 +19,7 @@ import Security from "./pages/Security";
 import PaymentMethods from "./pages/PaymentMethods";
 import NotificationSettings from "./pages/NotificationSettings";
 import HelpSupport from "./pages/HelpSupport";
+import About from "./pages/About";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 import { PasscodeGate } from "@/components/auth/PasscodeGate";
