@@ -95,6 +95,9 @@ export const PasscodeGate: React.FC<{ children: React.ReactNode }> = ({ children
     return null;
   }
 
+  // Already unlocked this session -> render immediately
+  if (unlocked) return <>{children}</>;
+
   // Signed in but no passcode yet -> redirect handled in effect, render loader
   if (hasPasscode === null || hasPasscode === false) {
     return (
@@ -103,8 +106,6 @@ export const PasscodeGate: React.FC<{ children: React.ReactNode }> = ({ children
       </div>
     );
   }
-
-  if (unlocked) return <>{children}</>;
 
   return (
     <div className="min-h-screen bg-background flex flex-col max-w-md mx-auto">
