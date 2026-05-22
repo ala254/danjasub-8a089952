@@ -1,24 +1,31 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, ArrowLeft, Mail, Loader2, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Loader2, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { PinKeypad } from '@/components/auth/PinKeypad';
 import { isValidEmail, isValidNgPhone, isValidFullName, normalizeNgPhone } from '@/lib/validation';
 import logo from '@/assets/danjasub-logo.jpg';
 
+/**
+ * TEMPORARY: OTP email verification is disabled for development.
+ * Auth uses email + password directly. The 6-digit passcode is kept
+ * as an in-app lock (set on first login, required on subsequent logins).
+ *
+ * To re-enable OTP later: restore the `otp` step from git history and
+ * swap signUp/signInWithPassword back to signInWithOtp/verifyOtp.
+ */
+
 type AuthMode = 'login' | 'register';
-type Step = 'identity' | 'otp' | 'set-passcode' | 'enter-passcode';
+type Step = 'identity' | 'set-passcode' | 'enter-passcode';
 
 const PASSCODE_LEN = 6;
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
-  const { sendEmailOtp, verifyEmailOtp } = useAuth();
 
   const [mode, setMode] = useState<AuthMode>('login');
   const [step, setStep] = useState<Step>('identity');
@@ -26,26 +33,19 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [referral, setReferral] = useState('');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [rememberEmail, setRememberEmail] = useState(true);
-  const [otp, setOtp] = useState('');
+
   const [passcode, setPasscode] = useState('');
   const [confirmPasscode, setConfirmPasscode] = useState('');
   const [stage, setStage] = useState<'enter' | 'confirm'>('enter');
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-  const [resendIn, setResendIn] = useState(0);
 
-  React.useEffect(() => {
-    if (resendIn <= 0) return;
-    const t = setTimeout(() => setResendIn((s) => s - 1), 1000);
-    return () => clearTimeout(t);
-  }, [resendIn]);
-
-
-  // Pre-fill remembered email on mount
   React.useEffect(() => {
     const saved = localStorage.getItem('danjasub_email');
     if (saved) setEmail(saved);
@@ -54,6 +54,7 @@ const Login: React.FC = () => {
   const validateIdentity = (): boolean => {
     const errs: Record<string, string> = {};
     if (!isValidEmail(email)) errs.email = 'Enter a valid email address';
+    if (password.length < 6) errs.password = 'Password must be at least 6 characters';
     if (mode === 'register') {
       if (!isValidFullName(name)) errs.name = 'Enter your full name (first and last)';
       if (!isValidNgPhone(phone)) errs.phone = 'Enter a valid Nigerian number (e.g. 08012345678)';
@@ -63,75 +64,9 @@ const Login: React.FC = () => {
     return Object.keys(errs).length === 0;
   };
 
-  // ---- Step 1: send OTP -----------------------------------------------------
-  const sendOtpRequest = async (isResend = false) => {
-    setLoading(true);
-    setError(null);
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim().toLowerCase(),
-      options: {
-        shouldCreateUser: mode === 'register',
-        emailRedirectTo: `${window.location.origin}/dashboard`,
-        data: mode === 'register'
-          ? { full_name: name.trim(), phone: phone ? normalizeNgPhone(phone) : undefined }
-          : undefined,
-      },
-    });
-    setLoading(false);
-
-    if (error) {
-      const msg = error.message.toLowerCase();
-      console.error('[OTP send]', error);
-      if (mode === 'login' && (msg.includes('signups not allowed') || msg.includes('not found'))) {
-        toast.error('No account found. Switch to Sign Up to create one.');
-      } else if (msg.includes('rate') || msg.includes('too many') || msg.includes('seconds')) {
-        toast.error('Please wait a moment before requesting another code.');
-      } else {
-        toast.error(error.message);
-      }
-      return false;
-    }
-
+  const afterAuthSuccess = async () => {
     if (rememberEmail) localStorage.setItem('danjasub_email', email.trim().toLowerCase());
-    setOtp('');
-    setResendIn(30);
-    toast.success(isResend ? 'New code sent to your email' : 'We sent a 6-digit code to your email');
-    return true;
-  };
-
-  const handleSendOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateIdentity()) return;
-    const ok = await sendOtpRequest(false);
-    if (ok) setStep('otp');
-  };
-
-  const handleResend = async () => {
-    if (resendIn > 0 || loading) return;
-    await sendOtpRequest(true);
-  };
-
-  // ---- Step 2: verify OTP ---------------------------------------------------
-  const handleVerifyOtp = async (code: string) => {
-    if (code.length !== 6) return;
-    setLoading(true);
-    setError(null);
-    const { error } = await verifyEmailOtp(email.trim().toLowerCase(), code);
-    if (error) {
-      setLoading(false);
-      const msg = error.message.toLowerCase();
-      console.error('[OTP verify]', error);
-      if (msg.includes('expired')) setError('Code expired. Tap Resend to get a new one.');
-      else if (msg.includes('invalid')) setError('Incorrect code. Please check and try again.');
-      else setError(error.message);
-      setOtp('');
-      return;
-    }
-
-
     const { data: hasPc } = await supabase.rpc('has_passcode');
-    setLoading(false);
-
     if (hasPc) {
       setStep('enter-passcode');
       setPasscode('');
@@ -143,7 +78,74 @@ const Login: React.FC = () => {
     }
   };
 
-  // ---- Step 3a: create new passcode ----------------------------------------
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateIdentity()) return;
+    setLoading(true);
+    setError(null);
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (mode === 'register') {
+      const { data, error } = await supabase.auth.signUp({
+        email: cleanEmail,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+          data: {
+            full_name: name.trim(),
+            phone: normalizeNgPhone(phone),
+            referral: referral || null,
+          },
+        },
+      });
+      if (error) {
+        setLoading(false);
+        const msg = error.message.toLowerCase();
+        if (msg.includes('already') || msg.includes('registered')) {
+          toast.error('Email already registered. Switch to Sign In.');
+        } else {
+          toast.error(error.message);
+        }
+        return;
+      }
+      // If email confirmation is disabled, session is returned immediately.
+      if (!data.session) {
+        // Fallback: sign in directly to establish session.
+        const { error: signInErr } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password,
+        });
+        if (signInErr) {
+          setLoading(false);
+          toast.error(signInErr.message);
+          return;
+        }
+      }
+      toast.success('Account created!');
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password,
+      });
+      if (error) {
+        setLoading(false);
+        const msg = error.message.toLowerCase();
+        if (msg.includes('invalid') || msg.includes('credentials')) {
+          toast.error('Wrong email or password.');
+        } else {
+          toast.error(error.message);
+        }
+        return;
+      }
+      toast.success('Welcome back!');
+    }
+
+    await afterAuthSuccess();
+    setLoading(false);
+  };
+
+  // ---- passcode (in-app lock) ----------------------------------------------
   const handlePasscodeEntered = (val: string) => {
     if (stage === 'enter') {
       setStage('confirm');
@@ -165,11 +167,10 @@ const Login: React.FC = () => {
     setLoading(false);
     if (error) { setError(error.message); return; }
     sessionStorage.setItem('passcode_unlocked', '1');
-    toast.success(mode === 'register' ? 'Account created!' : 'Passcode set');
+    toast.success('Passcode set');
     navigate('/dashboard');
   };
 
-  // ---- Step 3b: enter existing passcode ------------------------------------
   const handlePasscodeVerified = async (code: string) => {
     setLoading(true);
     setError(null);
@@ -179,7 +180,6 @@ const Login: React.FC = () => {
     const result = data as { ok: boolean; reason?: string; attempts_left?: number };
     if (result.ok) {
       sessionStorage.setItem('passcode_unlocked', '1');
-      toast.success('Welcome back!');
       navigate('/dashboard');
     } else if (result.reason === 'locked') {
       setError('Too many attempts. Locked for 15 minutes.');
@@ -196,21 +196,19 @@ const Login: React.FC = () => {
 
   const goBack = () => {
     setError(null);
-    if (step === 'otp') { setStep('identity'); return; }
     if (step === 'set-passcode' && stage === 'confirm') { setStage('enter'); setPasscode(''); return; }
-    if (step === 'enter-passcode' || step === 'set-passcode') { setStep('identity'); return; }
+    supabase.auth.signOut();
+    setStep('identity');
   };
 
   const headerTitle = () => {
     if (step === 'identity') return mode === 'login' ? 'Welcome Back' : 'Create Account';
-    if (step === 'otp') return 'Verify Email';
     if (step === 'set-passcode') return stage === 'enter' ? 'Create Passcode' : 'Confirm Passcode';
     return 'Enter Passcode';
   };
 
   const headerSubtitle = () => {
     if (step === 'identity') return mode === 'login' ? 'Sign in to your Danjasub wallet' : 'Join thousands on Danjasub';
-    if (step === 'otp') return `Code sent to ${email}`;
     if (step === 'set-passcode') return stage === 'enter'
       ? 'Choose a 6-digit passcode for fast login'
       : 'Re-enter to confirm';
@@ -258,7 +256,7 @@ const Login: React.FC = () => {
                 >Sign Up</button>
               </div>
 
-              <form onSubmit={handleSendOtp} className="space-y-4" noValidate>
+              <form onSubmit={handleSubmit} className="space-y-4" noValidate>
                 {mode === 'register' && (
                   <>
                     <Field label="Full Name" error={fieldErrors.name}>
@@ -279,6 +277,27 @@ const Login: React.FC = () => {
 
                 <Field label="Email Address" error={fieldErrors.email}>
                   <Input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="h-12 rounded-xl" />
+                </Field>
+
+                <Field label="Password" error={fieldErrors.password} hint={mode === 'register' ? 'At least 6 characters' : undefined}>
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? 'text' : 'password'}
+                      autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="h-12 rounded-xl pr-11"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((s) => !s)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </Field>
 
                 {mode === 'register' && (
@@ -317,65 +336,15 @@ const Login: React.FC = () => {
                 )}
 
                 <Button type="submit" disabled={loading} className="w-full" size="xl" variant="gradient">
-                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>{mode === 'login' ? 'Continue' : 'Create Account'} <ArrowRight className="w-5 h-5 ml-2" /></>}
+                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>{mode === 'login' ? 'Sign In' : 'Create Account'} <ArrowRight className="w-5 h-5 ml-2" /></>}
                 </Button>
 
                 <div className="flex items-center justify-center gap-2 pt-2 text-xs text-muted-foreground">
                   <ShieldCheck className="w-4 h-4 text-primary" />
-                  Secured with email OTP & 6-digit passcode
+                  Secured with password & 6-digit passcode
                 </div>
               </form>
             </>
-          )}
-
-          {step === 'otp' && (
-            <div className="space-y-6">
-              <div className="flex justify-center">
-                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-                  <Mail className="w-8 h-8 text-primary" />
-                </div>
-              </div>
-              <div>
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  maxLength={6}
-                  value={otp}
-                  onChange={(e) => {
-                    const v = e.target.value.replace(/\D/g, '').slice(0, 6);
-                    setOtp(v);
-                    setError(null);
-                    if (v.length === 6) handleVerifyOtp(v);
-                  }}
-                  placeholder="••••••"
-                  className="h-14 rounded-xl text-center text-2xl font-display tracking-[0.5em]"
-                  autoFocus
-                />
-                {error && <p className="text-xs text-destructive font-medium text-center mt-2">{error}</p>}
-              </div>
-
-              <Button
-                type="button"
-                onClick={() => otp.length === 6 && handleVerifyOtp(otp)}
-                disabled={loading || otp.length !== 6}
-                className="w-full"
-                size="xl"
-                variant="gradient"
-              >
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle2 className="w-5 h-5 mr-2" /> Verify</>}
-              </Button>
-
-              <button
-                type="button"
-                onClick={handleResend}
-                disabled={loading || resendIn > 0}
-                className="w-full text-sm text-primary font-semibold hover:underline disabled:opacity-50 disabled:no-underline"
-              >
-                {resendIn > 0 ? `Resend code in ${resendIn}s` : 'Resend code'}
-              </button>
-              <p className="text-center text-[11px] text-muted-foreground">Codes expire in 10 minutes. Check spam if not received.</p>
-            </div>
           )}
 
           {step === 'set-passcode' && (
@@ -395,24 +364,15 @@ const Login: React.FC = () => {
           )}
 
           {step === 'enter-passcode' && (
-            <div className="space-y-4">
-              <PinKeypad
-                value={passcode}
-                onChange={(v) => { setError(null); setPasscode(v); }}
-                onComplete={handlePasscodeVerified}
-                length={PASSCODE_LEN}
-                label="Enter your 6-digit passcode"
-                error={error}
-                disabled={loading}
-              />
-              <button
-                type="button"
-                onClick={async () => { setStep('otp'); setOtp(''); await sendOtpRequest(true); }}
-                className="w-full text-sm text-primary font-semibold hover:underline pt-2"
-              >
-                Forgot passcode? Verify by email
-              </button>
-            </div>
+            <PinKeypad
+              value={passcode}
+              onChange={(v) => { setError(null); setPasscode(v); }}
+              onComplete={handlePasscodeVerified}
+              length={PASSCODE_LEN}
+              label="Enter your 6-digit passcode"
+              error={error}
+              disabled={loading}
+            />
           )}
         </div>
 
@@ -426,7 +386,6 @@ const Login: React.FC = () => {
   );
 };
 
-/** Inline labelled field with error/hint slot. */
 const Field: React.FC<{
   label: string;
   error?: string;
