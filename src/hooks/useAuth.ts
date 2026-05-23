@@ -16,7 +16,7 @@ export const useAuth = () => {
       setLoading(false);
 
       // Graceful handling of session loss / expiry
-      if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+      if (event === 'SIGNED_OUT') {
         sessionStorage.removeItem('passcode_unlocked');
         // Avoid redirecting from public pages
         const path = window.location.pathname;
