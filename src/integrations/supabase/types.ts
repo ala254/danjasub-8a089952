@@ -343,7 +343,17 @@ export type Database = {
         Returns: boolean
       }
       is_user_suspended: { Args: { _user_id: string }; Returns: boolean }
+      lookup_recipient: { Args: { _query: string }; Returns: Json }
       set_user_passcode: { Args: { _passcode: string }; Returns: undefined }
+      transfer_wallet: {
+        Args: {
+          _amount: number
+          _narration?: string
+          _passcode: string
+          _recipient: string
+        }
+        Returns: Json
+      }
       verify_user_passcode: { Args: { _passcode: string }; Returns: Json }
     }
     Enums: {
