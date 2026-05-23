@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/button';
 interface WalletCardProps {
   balance: number;
   onFundWallet: () => void;
-  onWithdraw: () => void;
+  onTransfer: () => void;
 }
 
-export const WalletCard: React.FC<WalletCardProps> = ({ balance, onFundWallet, onWithdraw }) => {
+export const WalletCard: React.FC<WalletCardProps> = ({ balance, onFundWallet, onTransfer }) => {
   const [showBalance, setShowBalance] = useState(true);
 
   const formatCurrency = (amount: number) =>
