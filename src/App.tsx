@@ -44,6 +44,7 @@ const AppContent = () => {
         <Route path="/buy-data" element={<BuyData />} />
         <Route path="/pay-bills" element={<PayBills />} />
         <Route path="/fund-wallet" element={<FundWallet />} />
+        <Route path="/transfer" element={<Transfer />} />
         <Route path="/payment/verify" element={<PaymentVerify />} />
         <Route path="/history" element={<History />} />
         <Route path="/profile" element={<Profile />} />
