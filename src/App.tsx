@@ -11,6 +11,7 @@ import BuyAirtime from "./pages/BuyAirtime";
 import BuyData from "./pages/BuyData";
 import PayBills from "./pages/PayBills";
 import FundWallet from "./pages/FundWallet";
+import Transfer from "./pages/Transfer";
 import PaymentVerify from "./pages/PaymentVerify";
 import History from "./pages/History";
 import Profile from "./pages/Profile";
@@ -43,6 +44,7 @@ const AppContent = () => {
         <Route path="/buy-data" element={<BuyData />} />
         <Route path="/pay-bills" element={<PayBills />} />
         <Route path="/fund-wallet" element={<FundWallet />} />
+        <Route path="/transfer" element={<Transfer />} />
         <Route path="/payment/verify" element={<PaymentVerify />} />
         <Route path="/history" element={<History />} />
         <Route path="/profile" element={<Profile />} />
