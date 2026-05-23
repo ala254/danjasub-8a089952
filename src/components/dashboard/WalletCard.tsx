@@ -51,13 +51,13 @@ export const WalletCard: React.FC<WalletCardProps> = ({ balance, onFundWallet, o
             Fund
           </Button>
           <Button
-            onClick={onWithdraw}
+            onClick={onTransfer}
             variant="ghost"
             className="flex-1 bg-primary-foreground/5 hover:bg-primary-foreground/15 text-primary-foreground h-10"
             size="sm"
           >
-            <ArrowDownLeft className="w-4 h-4 mr-1.5" />
-            Withdraw
+            <Send className="w-4 h-4 mr-1.5" />
+            Transfer
           </Button>
         </div>
       </div>
