@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, Plus, ArrowDownLeft } from 'lucide-react';
+import { Eye, EyeOff, Plus, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface WalletCardProps {
