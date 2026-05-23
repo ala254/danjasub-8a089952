@@ -8,13 +8,31 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    // Set up listener FIRST so we don't miss any auth events
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[auth] event:', event, 'hasSession:', !!session);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+
+      // Graceful handling of session loss / expiry
+      if (event === 'SIGNED_OUT') {
+        sessionStorage.removeItem('passcode_unlocked');
+        // Avoid redirecting from public pages
+        const path = window.location.pathname;
+        if (path !== '/' && path !== '/login') {
+          window.location.replace('/login');
+        }
+      }
+
+      if (event === 'TOKEN_REFRESHED') {
+        console.log('[auth] token refreshed successfully');
+      }
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Then restore existing session from storage
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) console.error('[auth] getSession error:', error);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
