@@ -47,6 +47,14 @@ export const useTransactions = (limit = 10) => {
           title = 'Wallet Funded';
           description = 'Via Paystack';
         }
+        if (type === 'transfer_sent') {
+          title = 'Transfer Sent';
+          description = (meta.recipient_name as string) || 'Danjasub user';
+        }
+        if (type === 'transfer_received') {
+          title = 'Transfer Received';
+          description = (meta.sender_name as string) || 'Danjasub user';
+        }
 
         // Normalize statuses: "completed" → "success"
         const status = row.status === 'completed' ? 'success' : row.status;
