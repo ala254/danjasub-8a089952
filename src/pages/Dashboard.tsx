@@ -77,7 +77,6 @@ const Dashboard: React.FC = () => {
         <WalletCard
           balance={walletLoading ? 0 : balance}
           onFundWallet={() => navigate('/fund-wallet')}
-          onWithdraw={() => navigate('/transfer')}
           onTransfer={() => navigate('/transfer')}
         />
       </header>
