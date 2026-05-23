@@ -11,6 +11,7 @@ import BuyAirtime from "./pages/BuyAirtime";
 import BuyData from "./pages/BuyData";
 import PayBills from "./pages/PayBills";
 import FundWallet from "./pages/FundWallet";
+import Transfer from "./pages/Transfer";
 import PaymentVerify from "./pages/PaymentVerify";
 import History from "./pages/History";
 import Profile from "./pages/Profile";
