@@ -3,6 +3,7 @@ import { ArrowLeft, Smartphone, Zap, Shield, CreditCard, Globe } from 'lucide-re
 import { useNavigate } from 'react-router-dom';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { DeveloperInfo } from '@/components/developer/DeveloperInfo';
+import danjasubLogo from '@/assets/danjasub-logo.jpg';
 
 const features = [
   { icon: Zap, title: 'Fast Transactions', description: 'Instant airtime and data delivery across all networks' },
@@ -32,8 +33,8 @@ const About: React.FC = () => {
       <div className="px-4 py-6 space-y-6">
         {/* Brand Hero */}
         <div className="text-center space-y-3">
-          <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary via-accent to-primary mx-auto flex items-center justify-center shadow-lg shadow-primary/25">
-            <span className="text-3xl font-display font-bold text-white">D</span>
+          <div className="w-20 h-20 rounded-3xl bg-white mx-auto flex items-center justify-center shadow-lg shadow-primary/25 overflow-hidden p-2">
+            <img src={danjasubLogo} alt="Danjasub" className="w-full h-full object-contain" />
           </div>
           <div>
             <h2 className="font-display font-bold text-xl text-foreground">Danjasub</h2>
